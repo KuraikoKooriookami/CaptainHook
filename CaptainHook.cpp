@@ -1,20 +1,49 @@
-// CaptainHook.cpp : Diese Datei enthält die Funktion "main". Hier beginnt und endet die Ausführung des Programms.
-//
+#include <SDL.h>
+#include<vector> 
+#include<SDL_image.h>
 
-#include <iostream>
+using namespace std;
+extern "C"
 
-int main()
-{
-    std::cout << "Hello World!\n";
+struct WorldState {
+	SDL_Window* window;
+	SDL_Renderer* renderer;
+	SDL_Surface* image;
+	SDL_Texture* texture;
+};
+
+void initWorldState(WorldState& ws) {
+	ws.window = SDL_CreateWindow("Captain Hook", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 850, 600, SDL_WINDOW_SHOWN);
+	ws.renderer = SDL_CreateRenderer(ws.window, -1, SDL_RENDERER_PRESENTVSYNC);
+	SDL_Init(SDL_INIT_EVERYTHING);
+
+	if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
+		exit(0);
+	}
+
+	if (!(IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG)) {
+		SDL_Quit();
+		exit(0);
+	}
 }
 
-// Programm ausführen: STRG+F5 oder Menüeintrag "Debuggen" > "Starten ohne Debuggen starten"
-// Programm debuggen: F5 oder "Debuggen" > Menü "Debuggen starten"
+int main(int argc, char* args[])
+{
+	WorldState worldState;
 
-// Tipps für den Einstieg: 
-//   1. Verwenden Sie das Projektmappen-Explorer-Fenster zum Hinzufügen/Verwalten von Dateien.
-//   2. Verwenden Sie das Team Explorer-Fenster zum Herstellen einer Verbindung mit der Quellcodeverwaltung.
-//   3. Verwenden Sie das Ausgabefenster, um die Buildausgabe und andere Nachrichten anzuzeigen.
-//   4. Verwenden Sie das Fenster "Fehlerliste", um Fehler anzuzeigen.
-//   5. Wechseln Sie zu "Projekt" > "Neues Element hinzufügen", um neue Codedateien zu erstellen, bzw. zu "Projekt" > "Vorhandenes Element hinzufügen", um dem Projekt vorhandene Codedateien hinzuzufügen.
-//   6. Um dieses Projekt später erneut zu öffnen, wechseln Sie zu "Datei" > "Öffnen" > "Projekt", und wählen Sie die SLN-Datei aus.
+	while (true) {
+		initWorldState(worldState);
+		SDL_PumpEvents();
+		//TODO: ReadEvents();
+		//TODO: mutateWorldState(worldState);
+		//TODO: renderGraphics();
+
+		SDL_RenderPresent(worldState.renderer);
+	}
+
+	SDL_DestroyTexture(worldState.texture);
+	SDL_DestroyRenderer(worldState.renderer);
+	IMG_Quit();
+	SDL_Quit();
+	return 0;
+}
