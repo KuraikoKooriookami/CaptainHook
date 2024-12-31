@@ -51,11 +51,11 @@ void readEvents(WorldState& ws) {
 			ws.movement = v.MOVEMENT;
 		}
 		else {
-			if (ws.movement > 0) {
+			if (ws.movement > 0.1) {
 				ws.movement -= 0.1;
 			}
 			else {
-				if (ws.movement < 0) {
+				if (ws.movement < -0.1) {
 					ws.movement += 0.1;
 				}
 				else {
