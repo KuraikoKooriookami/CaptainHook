@@ -107,9 +107,16 @@ void mutateWorldState(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 	ws.ground = false;
 	for (const auto& obstacle : obstacles) {
 		if (checkCollision(ws, obstacle)) {
-			ws.ground = true;
-			ws.speedY = 0;
-			ws.playerPosition.y = obstacle.y - 50; // Adjust player position to be on top of the obstacle
+			if (ws.speedY > 0) {
+				ws.playerPosition.y = obstacle.y - 50; // Adjust player position to be on top of the obstacle
+				ws.ground = true;
+				ws.speedY = 0;
+			}
+			else {
+				ws.playerPosition.y = obstacle.y + 50; // Adjust player position to be on top of the obstacle
+				ws.ground = false;
+				ws.speedY = 0;
+			}
 			break;
 		}
 	}
