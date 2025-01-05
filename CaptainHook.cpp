@@ -2,6 +2,9 @@
 #include<vector> 
 #include<SDL_image.h>
 
+#define SCREEN_WIDTH 850
+#define SCREEN_HEIGHT  600
+
 using namespace std;
 extern "C"
 
@@ -11,6 +14,7 @@ struct WorldState {
 	SDL_Surface* image;
 	SDL_Texture* texture;
 	SDL_FPoint playerPosition = { 100, 100 };
+	SDL_Rect camera = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
 	double speedX = 0;
 	double speedY = 0;
 	bool ground = false;
@@ -28,7 +32,7 @@ struct velocity {
 };
 
 void initWorldState(WorldState& ws) {
-	ws.window = SDL_CreateWindow("Captain Hook", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 850, 600, SDL_WINDOW_SHOWN);
+	ws.window = SDL_CreateWindow("Captain Hook", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
 	ws.renderer = SDL_CreateRenderer(ws.window, -1, SDL_RENDERER_PRESENTVSYNC);
 	SDL_Init(SDL_INIT_EVERYTHING);
 
@@ -98,6 +102,20 @@ bool checkCollision(const WorldState& ws, const SDL_FRect& b) {
 		a.y + a.h > b.y);
 }
 
+void handle_camera(WorldState& ws) {
+	ws.camera.x = (ws.playerPosition.x + 50 / 2) - SCREEN_WIDTH  /  2;
+	ws.camera.y = (ws.playerPosition.y + 50 / 2) - SCREEN_HEIGHT / 2;
+	
+	if (ws.camera.x < 0)
+	{
+		ws.camera.x = 0;
+	}
+	if (ws.camera.y < 0)
+	{
+		ws.camera.y = 0;
+	}
+}
+
 void mutateWorldState(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 	ws.speedX += ws.movement;
 	ws.playerPosition.x += ws.speedX;
@@ -129,14 +147,15 @@ void renderGraphics(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 
 	SDL_SetRenderDrawColor(ws.renderer, 255, 0, 0, 255);
 	for (const auto& obstacle : obstacles) {
-		SDL_Rect obstacleRect = { static_cast<int>(obstacle.x), static_cast<int>(obstacle.y), static_cast<int>(obstacle.w), static_cast<int>(obstacle.h) };
+		SDL_Rect obstacleRect = { static_cast<int>(obstacle.x - ws.camera.x), static_cast<int>(obstacle.y - ws.camera. y), static_cast<int>(obstacle.w), static_cast<int>(obstacle.h) };
 		SDL_RenderFillRect(ws.renderer, &obstacleRect);
 	}
 
 	SDL_SetRenderDrawColor(ws.renderer, 0, 0, 255, 255);
-	SDL_Rect playerRect = { ws.playerPosition.x, ws.playerPosition.y, 50, 50 };
+	SDL_Rect playerRect = { ws.playerPosition.x - ws.camera.x, ws.playerPosition.y - ws.camera.y, 50, 50 };
 	SDL_RenderFillRect(ws.renderer, &playerRect);
 	SDL_RenderPresent(ws.renderer);
+	
 }
 
 int main(int argc, char* args[])
@@ -152,6 +171,7 @@ int main(int argc, char* args[])
 	while (true) {
 		readEvents(worldState);
 		mutateWorldState(worldState, obstacles);
+		handle_camera(worldState);
 		renderGraphics(worldState, obstacles);
 	}
 
