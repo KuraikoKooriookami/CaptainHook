@@ -15,11 +15,20 @@ struct WorldState {
 	SDL_Texture* texture;
 	SDL_Rect player = { 100, 100, 50, 50 };
 	SDL_Rect camera = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
+	SDL_FPoint hookGoal = { 0, 0 };
+	bool hook = false;
+	bool hookConnected = false;
+	bool noConnection = false;
+	double hookLength = 0;
 	double speedX = 0;
 	double speedY = 0;
 	bool ground = false;
 	int jumps = 0;
 	double movement = 0;
+};
+
+struct vector2 {
+	float x, y;
 };
 
 struct velocity {
@@ -46,7 +55,62 @@ void initWorldState(WorldState& ws) {
 	}
 }
 
-void readEvents(WorldState& ws) {
+
+vector2 calculateDirection(const SDL_Rect& player, const SDL_FPoint& hookGoal) {
+	float centerX = player.x + player.w / 2.0f;
+	float centerY = player.y + player.h / 2.0f;
+	float dx = hookGoal.x - centerX;
+	float dy = hookGoal.y - centerY;
+	float magnitude = sqrt(dx * dx + dy * dy);
+	return { dx / magnitude, dy / magnitude };
+}
+
+SDL_Point checkHookInterception(const SDL_Rect player, const SDL_MouseButtonEvent& button, const vector<SDL_FRect>& obstacles) {
+	SDL_Point hookGoal = { button.x, button.y };
+
+	// Berechne den Mittelpunkt des Spielers
+	float playerCenterX = player.x + player.w / 2.0f;
+	float playerCenterY = player.y + player.h / 2.0f;
+
+	for (const auto& obstacle : obstacles) {
+		// Berechne die Grenzen des Hindernisses
+		float left = obstacle.x;
+		float right = obstacle.x + obstacle.w;
+		float top = obstacle.y;
+		float bottom = obstacle.y + obstacle.h;
+
+		// Berechne die Richtung des Hakens
+		float dx = hookGoal.x - playerCenterX;
+		float dy = hookGoal.y - playerCenterY;
+
+		// Überprüfe, ob der Haken das Hindernis schneidet
+		if ((playerCenterX < right && hookGoal.x > left) || (playerCenterX > left && hookGoal.x < right)) {
+			if ((playerCenterY < bottom && hookGoal.y > top) || (playerCenterY > top && hookGoal.y < bottom)) {
+				// Berechne den Schnittpunkt
+				if (dx != 0) {
+					float slope = dy / dx;
+					float intercept = playerCenterY - slope * playerCenterX;
+
+					if (dx > 0) {
+						hookGoal.x = left;
+					}
+					else {
+						hookGoal.x = right;
+					}
+					hookGoal.y = slope * hookGoal.x + intercept;
+				}
+				else {
+					hookGoal.y = (dy > 0) ? top : bottom;
+				}
+				return hookGoal;
+			}
+		}
+	}
+
+	return hookGoal;
+}
+
+void readEvents(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 	SDL_PumpEvents();
 	const Uint8* state = SDL_GetKeyboardState(NULL);
 	SDL_Event event;
@@ -74,6 +138,18 @@ void readEvents(WorldState& ws) {
 			ws.jumps++;
 			ws.speedY = v.JUMP * -1;
 			ws.ground = false;
+		}
+		if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_RIGHT) 
+		{
+			//ws.hookGoal = checkHookInterception(ws.player,event.button, obstacles);
+			ws.hookGoal.x = event.button.x;
+			ws.hookGoal.y = event.button.y;
+			ws.noConnection = false;
+			ws.hook = true;
+		}
+		if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_RIGHT) {
+			ws.hook = false;
+			ws.hookConnected = false;
 		}
 	}
 	if (ws.ground == false) {
@@ -103,36 +179,7 @@ bool checkCollision(const WorldState& ws, const SDL_FRect& b) {
 		a.y + a.h > b.y);
 }
 
-void resolveCollision(WorldState& ws, const SDL_FRect& obstacle) {
-
-	// Determine the overlap in each direction
-	float overlapLeft = (ws.player.x + ws.player.w) - obstacle.x;
-	float overlapRight = (obstacle.x + obstacle.w) - ws.player.x;
-	float overlapTop = (ws.player.y + ws.player.h) - obstacle.y;
-	float overlapBottom = (obstacle.y + obstacle.h) - ws.player.y;
-
-	// Find the minimum overlap to resolve collision
-	float minOverlap = std::min({ overlapLeft, overlapRight, overlapTop, overlapBottom });
-
-	if (minOverlap == overlapLeft) {
-		// Colliding from the left
-		ws.player.x = obstacle.x - ws.player.w;
-	}
-	else if (minOverlap == overlapRight) {
-		// Colliding from the right
-		ws.player.x = obstacle.x + obstacle.w;
-	}
-	else if (minOverlap == overlapTop) {
-		// Colliding from the top
-		ws.player.y = obstacle.y - ws.player.h;
-	}
-	else if (minOverlap == overlapBottom) {
-		// Colliding from the bottom
-		ws.player.y = obstacle.y + obstacle.h;
-	}
-}
-
-void handle_camera(WorldState& ws) {
+/*void handle_camera(WorldState& ws) {
 	ws.camera.x = (ws.player.x + 50 / 2) - SCREEN_WIDTH  /  2;
 	ws.camera.y = (ws.player.y + 50 / 2) - SCREEN_HEIGHT / 2;
 	
@@ -144,10 +191,31 @@ void handle_camera(WorldState& ws) {
 	{
 		ws.camera.y = 0;
 	}
-}
+}*/
 
 void mutateWorldState(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 
+	if (ws.hook && !ws.hookConnected && !ws.noConnection) {
+		vector2 direction = calculateDirection(ws.player, ws.hookGoal);
+		SDL_FPoint currentPosition = { ws.player.x + ws.player.w / 2, ws.player.y + ws.player.h / 2 };
+		while (!ws.hookConnected) {
+			currentPosition.x += direction.x;
+			currentPosition.y += direction.y;
+			SDL_FRect currentRect = { currentPosition.x, currentPosition.y, 1, 1 };
+			for (const auto& obstacle : obstacles) {
+				if (SDL_HasIntersectionF(&currentRect, &obstacle)) {
+					ws.hookConnected = true;
+					ws.hookGoal = currentPosition;
+					break;
+				}
+			}
+			if (!ws.hookConnected && abs(currentPosition.x - ws.hookGoal.x) < 2 && abs(currentPosition.y - ws.hookGoal.y) < 2) {
+				ws.noConnection = true;
+				break;
+			}
+		}
+		ws.hookGoal = currentPosition;
+	}
 	ws.ground = false;
 	ws.player.y += ws.speedY;
 	for (const auto& obstacle : obstacles) {
@@ -181,10 +249,13 @@ void mutateWorldState(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 	}
 }
 
-
 void renderGraphics(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 	SDL_SetRenderDrawColor(ws.renderer, 0, 0, 0, 255);
 	SDL_RenderClear(ws.renderer);
+	if (ws.hook && ws.hookConnected) {
+		SDL_SetRenderDrawColor(ws.renderer, 0, 255, 0, 255);
+		SDL_RenderDrawLine(ws.renderer, ws.player.x + ws.player.w / 2, ws.player.y + ws.player.h / 2, ws.hookGoal.x, ws.hookGoal.y);
+	}
 
 	SDL_SetRenderDrawColor(ws.renderer, 255, 0, 0, 255);
 	for (const auto& obstacle : obstacles) {
@@ -211,9 +282,9 @@ int main(int argc, char* args[])
 	};
 
 	while (true) {
-		readEvents(worldState);
+		readEvents(worldState, obstacles);
 		mutateWorldState(worldState, obstacles);
-		handle_camera(worldState);
+		//handle_camera(worldState);
 		renderGraphics(worldState, obstacles);
 	}
 
