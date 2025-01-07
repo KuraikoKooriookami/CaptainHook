@@ -179,7 +179,7 @@ bool checkCollision(const WorldState& ws, const SDL_FRect& b) {
 		a.y + a.h > b.y);
 }
 
-/*void handle_camera(WorldState& ws) {
+void handle_camera(WorldState& ws) {
 	ws.camera.x = (ws.player.x + 50 / 2) - SCREEN_WIDTH  /  2;
 	ws.camera.y = (ws.player.y + 50 / 2) - SCREEN_HEIGHT / 2;
 	
@@ -191,7 +191,7 @@ bool checkCollision(const WorldState& ws, const SDL_FRect& b) {
 	{
 		ws.camera.y = 0;
 	}
-}*/
+}
 
 void mutateWorldState(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 
@@ -284,7 +284,7 @@ int main(int argc, char* args[])
 	while (true) {
 		readEvents(worldState, obstacles);
 		mutateWorldState(worldState, obstacles);
-		//handle_camera(worldState);
+		handle_camera(worldState);
 		renderGraphics(worldState, obstacles);
 	}
 
