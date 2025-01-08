@@ -16,9 +16,12 @@ struct WorldState {
 	SDL_Rect player = { 100, 100, 50, 50 };
 	SDL_Rect camera = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
 	SDL_FPoint hookGoal = { 0, 0 };
-	bool hook = false;
+	SDL_FPoint hookPosition = { 0, 0 };
+	bool hookFlying = false;
 	bool hookConnected = false;
-	bool noConnection = false;
+	bool hookNotConnected = false;
+	float MAXHOOKLENGTH = 1000;
+	float currentHookLength = 0;
 	double hookLength = 0;
 	double speedX = 0;
 	double speedY = 0;
@@ -144,11 +147,12 @@ void readEvents(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 			//ws.hookGoal = checkHookInterception(ws.player,event.button, obstacles);
 			ws.hookGoal.x = event.button.x;
 			ws.hookGoal.y = event.button.y;
-			ws.noConnection = false;
-			ws.hook = true;
+			ws.hookNotConnected = false;
+			ws.hookFlying = true;
 		}
 		if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_RIGHT) {
-			ws.hook = false;
+			ws.hookFlying = false;
+			ws.hookNotConnected = true;
 			ws.hookConnected = false;
 		}
 	}
@@ -195,7 +199,7 @@ void handle_camera(WorldState& ws) {
 
 void mutateWorldState(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 
-	if (ws.hook && !ws.hookConnected && !ws.noConnection) {
+	if (ws.hookFlying && !ws.hookConnected && !ws.hookNotConnected) {
 		vector2 direction = calculateDirection(ws.player, ws.hookGoal);
 		SDL_FPoint currentPosition = { ws.player.x + ws.player.w / 2, ws.player.y + ws.player.h / 2 };
 		while (!ws.hookConnected) {
@@ -205,16 +209,16 @@ void mutateWorldState(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 			for (const auto& obstacle : obstacles) {
 				if (SDL_HasIntersectionF(&currentRect, &obstacle)) {
 					ws.hookConnected = true;
-					ws.hookGoal = currentPosition;
+					ws.hookPosition = currentPosition;
 					break;
 				}
 			}
 			if (!ws.hookConnected && abs(currentPosition.x - ws.hookGoal.x) < 2 && abs(currentPosition.y - ws.hookGoal.y) < 2) {
-				ws.noConnection = true;
+				ws.hookNotConnected = true;
 				break;
 			}
 		}
-		ws.hookGoal = currentPosition;
+		ws.hookPosition = currentPosition;
 	}
 	ws.ground = false;
 	ws.player.y += ws.speedY;
@@ -252,9 +256,9 @@ void mutateWorldState(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 void renderGraphics(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 	SDL_SetRenderDrawColor(ws.renderer, 0, 0, 0, 255);
 	SDL_RenderClear(ws.renderer);
-	if (ws.hook && ws.hookConnected) {
+	if (ws.hookFlying || ws.hookConnected) {
 		SDL_SetRenderDrawColor(ws.renderer, 0, 255, 0, 255);
-		SDL_RenderDrawLine(ws.renderer, ws.player.x + ws.player.w / 2, ws.player.y + ws.player.h / 2, ws.hookGoal.x, ws.hookGoal.y);
+		SDL_RenderDrawLine(ws.renderer, ws.player.x + ws.player.w / 2, ws.player.y + ws.player.h / 2, ws.hookPosition.x, ws.hookPosition.y);
 	}
 
 	SDL_SetRenderDrawColor(ws.renderer, 255, 0, 0, 255);
