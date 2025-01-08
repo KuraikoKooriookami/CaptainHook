@@ -21,8 +21,9 @@ struct WorldState {
 	bool hookFlying = false;
 	bool hookConnected = false;
 	bool hookNotConnected = false;
+	int amountOfHookTicks = 1;
 	float MAXHOOKLENGTH = 1000;
-	float HOOKFLYINGSPEED = 20;
+	float HOOKFLYINGSPEED = 2;
 	float currentHookLength = 0;
 	double hookLength = 0;
 	double speedX = 0;
@@ -102,9 +103,9 @@ void readEvents(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 		{
 			ws.hookGoal.x = event.button.x;
 			ws.hookGoal.y = event.button.y;
-			ws.hookPosition = { float(ws.player.x) + float(ws.player.w) / 2, float(ws.player.y) + float(ws.player.h) / 2 };
 			ws.hookNotConnected = false;
 			ws.hookFlying = true;
+			ws.amountOfHookTicks = 1;
 		}
 		if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_RIGHT) {
 			ws.hookFlying = false;
@@ -112,6 +113,7 @@ void readEvents(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 				ws.hookNotConnected = true;
 			}
 			ws.hookConnected = false;
+			ws.amountOfHookTicks = 1;
 		}
 	}
 	if (ws.ground == false) {
@@ -152,27 +154,32 @@ void mutateWorldState(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 
 	if (ws.hookFlying && !ws.hookConnected && !ws.hookNotConnected) {
 		vector2 direction = calculateDirection(ws.player, ws.hookGoal);
-		ws.hookPosition.x += direction.x * ws.HOOKFLYINGSPEED;
-		ws.hookPosition.y += direction.y * ws.HOOKFLYINGSPEED;
+
+		ws.hookPosition.x = ws.player.x + ws.player.w / 2 + (direction.x * (ws.HOOKFLYINGSPEED * ws.amountOfHookTicks));
+		ws.hookPosition.y = ws.player.y + ws.player.h / 2 + (direction.y * (ws.HOOKFLYINGSPEED * ws.amountOfHookTicks));
+		ws.amountOfHookTicks++;
 		SDL_FRect currentRect = { ws.hookPosition.x, ws.hookPosition.y, 1, 1 };
 		for (const auto& obstacle : obstacles) {
 			if (SDL_HasIntersectionF(&currentRect, &obstacle)) {
 				ws.hookConnected = true;
 				ws.hookFlying = false;
+				ws.hookGoal = ws.hookPosition;
 				ws.hookPosition = ws.hookPosition;
 				break;
 			}
 		}
 		if (!ws.hookConnected && abs(ws.hookPosition.x - ws.hookGoal.x) < 2 && abs(ws.hookPosition.y - ws.hookGoal.y) < 2) {
 			ws.hookNotConnected = true;
+			ws.hookGoal = ws.hookPosition;
 			ws.hookFlying = false;
 		}
 	}
 	else {
 		if (ws.hookNotConnected) {
-			vector2 direction = calculateDirection(ws.player, ws.hookPosition);
-			ws.hookPosition.x -= direction.x * ws.HOOKFLYINGSPEED;
-			ws.hookPosition.y -= direction.y * ws.HOOKFLYINGSPEED;
+			vector2 direction = calculateDirection(ws.player, ws.hookGoal);
+			ws.amountOfHookTicks--;
+			ws.hookPosition.x = ws.hookGoal.x + (direction.x * (ws.HOOKFLYINGSPEED * ws.amountOfHookTicks));
+			ws.hookPosition.y = ws.hookGoal.y + (direction.y * (ws.HOOKFLYINGSPEED * ws.amountOfHookTicks));
 			if (!ws.hookConnected && abs(ws.hookPosition.x - (float(ws.player.x) + float(ws.player.w) / 2)) < 2 
 				&& abs(ws.hookPosition.y - (float(ws.player.y) + float(ws.player.h) / 2)) < 2) {
 				ws.hookNotConnected = false;
@@ -247,7 +254,7 @@ int main(int argc, char* args[])
 	while (true) {
 		readEvents(worldState, obstacles);
 		mutateWorldState(worldState, obstacles);
-		handle_camera(worldState);
+		//handle_camera(worldState);
 		renderGraphics(worldState, obstacles);
 	}
 
