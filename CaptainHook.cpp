@@ -1,6 +1,7 @@
 #include <SDL.h>
 #include<vector> 
 #include<SDL_image.h>
+#include <iostream>
 
 #define SCREEN_WIDTH 850
 #define SCREEN_HEIGHT  600
@@ -21,6 +22,7 @@ struct WorldState {
 	bool hookConnected = false;
 	bool hookNotConnected = false;
 	float MAXHOOKLENGTH = 1000;
+	float HOOKFLYINGSPEED = 10;
 	float currentHookLength = 0;
 	double hookLength = 0;
 	double speedX = 0;
@@ -147,12 +149,15 @@ void readEvents(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 			//ws.hookGoal = checkHookInterception(ws.player,event.button, obstacles);
 			ws.hookGoal.x = event.button.x;
 			ws.hookGoal.y = event.button.y;
+			ws.hookPosition = { float(ws.player.x) + float(ws.player.w) / 2, float(ws.player.y) + float(ws.player.h) / 2 };
 			ws.hookNotConnected = false;
 			ws.hookFlying = true;
 		}
 		if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_RIGHT) {
 			ws.hookFlying = false;
-			ws.hookNotConnected = true;
+			if (ws.hookConnected) {
+				ws.hookNotConnected = true;
+			}
 			ws.hookConnected = false;
 		}
 	}
@@ -201,24 +206,32 @@ void mutateWorldState(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 
 	if (ws.hookFlying && !ws.hookConnected && !ws.hookNotConnected) {
 		vector2 direction = calculateDirection(ws.player, ws.hookGoal);
-		SDL_FPoint currentPosition = { ws.player.x + ws.player.w / 2, ws.player.y + ws.player.h / 2 };
-		while (!ws.hookConnected) {
-			currentPosition.x += direction.x;
-			currentPosition.y += direction.y;
-			SDL_FRect currentRect = { currentPosition.x, currentPosition.y, 1, 1 };
-			for (const auto& obstacle : obstacles) {
-				if (SDL_HasIntersectionF(&currentRect, &obstacle)) {
-					ws.hookConnected = true;
-					ws.hookPosition = currentPosition;
-					break;
-				}
-			}
-			if (!ws.hookConnected && abs(currentPosition.x - ws.hookGoal.x) < 2 && abs(currentPosition.y - ws.hookGoal.y) < 2) {
-				ws.hookNotConnected = true;
+		ws.hookPosition.x += direction.x * ws.HOOKFLYINGSPEED;
+		ws.hookPosition.y += direction.y * ws.HOOKFLYINGSPEED;
+		SDL_FRect currentRect = { ws.hookPosition.x, ws.hookPosition.y, 1, 1 };
+		for (const auto& obstacle : obstacles) {
+			if (SDL_HasIntersectionF(&currentRect, &obstacle)) {
+				ws.hookConnected = true;
+				ws.hookFlying = false;
+				ws.hookPosition = ws.hookPosition;
 				break;
 			}
 		}
-		ws.hookPosition = currentPosition;
+		if (!ws.hookConnected && abs(ws.hookPosition.x - ws.hookGoal.x) < 2 && abs(ws.hookPosition.y - ws.hookGoal.y) < 2) {
+			ws.hookNotConnected = true;
+			ws.hookFlying = false;
+		}
+	}
+	else {
+		if (ws.hookNotConnected) {
+			vector2 direction = calculateDirection(ws.player, ws.hookPosition);
+			ws.hookPosition.x -= direction.x * ws.HOOKFLYINGSPEED;
+			ws.hookPosition.y -= direction.y * ws.HOOKFLYINGSPEED;
+			if (!ws.hookConnected && abs(ws.hookPosition.x - (float(ws.player.x) + float(ws.player.w) / 2)) < 2 
+				&& abs(ws.hookPosition.y - (float(ws.player.y) + float(ws.player.h) / 2)) < 2) {
+				ws.hookNotConnected = false;
+			}
+		}
 	}
 	ws.ground = false;
 	ws.player.y += ws.speedY;
@@ -256,7 +269,7 @@ void mutateWorldState(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 void renderGraphics(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 	SDL_SetRenderDrawColor(ws.renderer, 0, 0, 0, 255);
 	SDL_RenderClear(ws.renderer);
-	if (ws.hookFlying || ws.hookConnected) {
+	if (ws.hookFlying || ws.hookConnected || ws.hookNotConnected) {
 		SDL_SetRenderDrawColor(ws.renderer, 0, 255, 0, 255);
 		SDL_RenderDrawLine(ws.renderer, ws.player.x + ws.player.w / 2, ws.player.y + ws.player.h / 2, ws.hookPosition.x, ws.hookPosition.y);
 	}
@@ -288,7 +301,7 @@ int main(int argc, char* args[])
 	while (true) {
 		readEvents(worldState, obstacles);
 		mutateWorldState(worldState, obstacles);
-		handle_camera(worldState);
+		//handle_camera(worldState);
 		renderGraphics(worldState, obstacles);
 	}
 
