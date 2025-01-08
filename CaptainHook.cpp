@@ -301,7 +301,7 @@ int main(int argc, char* args[])
 	while (true) {
 		readEvents(worldState, obstacles);
 		mutateWorldState(worldState, obstacles);
-		//handle_camera(worldState);
+		handle_camera(worldState);
 		renderGraphics(worldState, obstacles);
 	}
 
