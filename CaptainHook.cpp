@@ -23,7 +23,7 @@ struct WorldState {
 	bool hookNotConnected = false;
 	int amountOfHookTicks = 1;
 	float MAXHOOKLENGTH = 1000;
-	float HOOKFLYINGSPEED = 20;
+	float HOOKFLYINGSPEED = 2;
 	float currentHookLength = 0;
 	double hookLength = 0;
 	double speedX = 0;
@@ -101,8 +101,8 @@ void readEvents(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 		}
 		if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_RIGHT) 
 		{
-			ws.hookGoal.x = event.button.x;
-			ws.hookGoal.y = event.button.y;
+			ws.hookGoal.x = event.button.x + ws.camera.x;
+			ws.hookGoal.y = event.button.y + ws.camera.y;
 			ws.hookNotConnected = false;
 			ws.hookFlying = true;
 			ws.amountOfHookTicks = 1;
@@ -137,8 +137,8 @@ void readEvents(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 }
 
 void handle_camera(WorldState& ws) {
-	ws.camera.x = (ws.player.x + 50 / 2) - SCREEN_WIDTH  /  2;
-	ws.camera.y = (ws.player.y + 50 / 2) - SCREEN_HEIGHT / 2;
+	ws.camera.x = (ws.player.x + ws.player.w / 2) - SCREEN_WIDTH  /  2;
+	ws.camera.y = (ws.player.y + ws.player.h / 2) - SCREEN_HEIGHT / 2;
 	
 	if (ws.camera.x < 0)
 	{
@@ -191,12 +191,12 @@ void mutateWorldState(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 	for (const auto& obstacle : obstacles) {
 		if (SDL_HasIntersectionF(&ws.player, &obstacle)) {
 			if (ws.speedY > 0) {
-				ws.player.y = obstacle.y - ws.player.h; // Adjust player position to be on top of the obstacle
+				ws.player.y = obstacle.y - ws.player.h;
 				ws.ground = true;
 				ws.speedY = 0;
 			}
 			else {
-				ws.player.y = obstacle.y + obstacle.h; // Adjust player position to be on top of the obstacle
+				ws.player.y = obstacle.y + obstacle.h;
 				ws.ground = false;
 				ws.speedY = 0;
 			}
@@ -208,11 +208,11 @@ void mutateWorldState(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 	for (const auto& obstacle : obstacles) {
 		if (SDL_HasIntersectionF(&ws.player, &obstacle)) {
 			if (ws.speedX > 0) {
-				ws.player.x = obstacle.x - ws.player.w; // Adjust player position to be on top of the obstacle
+				ws.player.x = obstacle.x - ws.player.w;
 				ws.speedX = 0;
 			}
 			else {
-				ws.player.x = obstacle.x + obstacle.w; // Adjust player position to be on top of the obstacle
+				ws.player.x = obstacle.x + obstacle.w;
 				ws.speedX = 0;
 			}
 		}
@@ -224,7 +224,7 @@ void renderGraphics(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 	SDL_RenderClear(ws.renderer);
 	if (ws.hookFlying || ws.hookConnected || ws.hookNotConnected) {
 		SDL_SetRenderDrawColor(ws.renderer, 0, 255, 0, 255);
-		SDL_RenderDrawLine(ws.renderer, ws.player.x + ws.player.w / 2, ws.player.y + ws.player.h / 2, ws.hookPosition.x, ws.hookPosition.y);
+		SDL_RenderDrawLine(ws.renderer, ws.player.x - ws.camera.x + ws.player.w / 2, ws.player.y - ws.camera.y + ws.player.h / 2, ws.hookPosition.x - ws.camera.x, ws.hookPosition.y - ws.camera.y);
 	}
 
 	SDL_SetRenderDrawColor(ws.renderer, 255, 0, 0, 255);
@@ -234,7 +234,7 @@ void renderGraphics(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 	}
 
 	SDL_SetRenderDrawColor(ws.renderer, 0, 0, 255, 255);
-	SDL_Rect playerRect = { ws.player.x - ws.camera.x, ws.player.y - ws.camera.y, 50, 50 };
+	SDL_Rect playerRect = { ws.player.x - ws.camera.x, ws.player.y - ws.camera.y, ws.player.w, ws.player.h };
 	SDL_RenderFillRect(ws.renderer, &playerRect);
 	SDL_RenderPresent(ws.renderer);
 	
@@ -248,13 +248,15 @@ int main(int argc, char* args[])
 		{0, 550, 1050, 50}, // Example ground object
 		{200, 400, 100, 50}, // Example obstacle
 		{400, 300, 350, 50},  // Another example obstacle
-		{850, 200, 50, 300}  // Wall example obstacle
+		{850, 200, 50, 300},  // Wall example obstacle
+		{750, 850, 1050, 50 }, // Example ground object
+		{1500, 650, 50, 50 }, // Example ground object
 	};
 
 	while (true) {
 		readEvents(worldState, obstacles);
 		mutateWorldState(worldState, obstacles);
-		//handle_camera(worldState);
+		handle_camera(worldState);
 		renderGraphics(worldState, obstacles);
 	}
 
