@@ -23,7 +23,7 @@ struct WorldState {
 	bool hookNotConnected = false;
 	int amountOfHookTicks = 1;
 	float MAXHOOKLENGTH = 1000;
-	float HOOKFLYINGSPEED = 2;
+	float HOOKFLYINGSPEED = 20;
 	float currentHookLength = 0;
 	double hookLength = 0;
 	double speedX = 0;
