@@ -178,8 +178,8 @@ void mutateWorldState(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 		if (ws.hookNotConnected) {
 			vector2 direction = calculateDirection(ws.player, ws.hookGoal);
 			ws.amountOfHookTicks--;
-			ws.hookPosition.x = ws.hookGoal.x + (direction.x * (ws.HOOKFLYINGSPEED * ws.amountOfHookTicks));
-			ws.hookPosition.y = ws.hookGoal.y + (direction.y * (ws.HOOKFLYINGSPEED * ws.amountOfHookTicks));
+			ws.hookPosition.x = ws.player.x + ws.player.w/2 + (direction.x * (ws.HOOKFLYINGSPEED * ws.amountOfHookTicks));
+			ws.hookPosition.y = ws.player.y + ws.player.h/2 + (direction.y * (ws.HOOKFLYINGSPEED * ws.amountOfHookTicks));
 			if (!ws.hookConnected && abs(ws.hookPosition.x - (float(ws.player.x) + float(ws.player.w) / 2)) < 2 
 				&& abs(ws.hookPosition.y - (float(ws.player.y) + float(ws.player.h) / 2)) < 2) {
 				ws.hookNotConnected = false;
@@ -254,7 +254,7 @@ int main(int argc, char* args[])
 	while (true) {
 		readEvents(worldState, obstacles);
 		mutateWorldState(worldState, obstacles);
-		handle_camera(worldState);
+		//handle_camera(worldState);
 		renderGraphics(worldState, obstacles);
 	}
 
