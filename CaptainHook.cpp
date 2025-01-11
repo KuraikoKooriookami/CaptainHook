@@ -13,6 +13,16 @@
 using namespace std;
 extern "C"
 
+struct vector2 {
+	float x, y;    
+	
+	vector2& operator+=(const vector2& other) {
+		this->x += other.x;
+		this->y += other.y;
+		return *this;
+	}
+};
+
 struct WorldState {
 	SDL_Window* window;
 	SDL_Renderer* renderer;
@@ -23,13 +33,15 @@ struct WorldState {
 	SDL_FPoint hookPosition = { 0, 0 };
 	SDL_Rect spriteSheet[16][12] = { 0, 0, TILESIZE , TILESIZE };
 	vector<vector<int>>  map;
+	vector2 playerVelocity = { 0, 0 };
+	vector2 appliedForce = { 0, 0 };
 	bool hookFlying = false;
 	bool hookConnected = false;
 	bool hookNotConnected = false;
 	int amountOfHookTicks = 1;
 	float MAXHOOKLENGTH = 1000;
-	float HOOKFLYINGSPEED = 10;
-	float HOOKSTRENGHT = 7.5;
+	float HOOKFLYINGSPEED = 25;
+	float HOOKSTRENGHT = 5;
 	float currentHookLength = 0;
 	double hookLength = 0;
 	double speedX = 0;
@@ -40,18 +52,14 @@ struct WorldState {
 
 };
 
-struct vector2 {
-	float x, y;
-};
-
 struct {
 	float x;
 	float y;
 } camera = { 0, 0, };
 
 struct velocity {
-	double MAXSPEED = 1000;
-	double MOVEMENT = 5;
+	double MAXSPEED = 100;
+	double MOVEMENT = 7.5;
 	double AIR_FRICTION = 0.95;
 	double GROUND_FRICTION = 0.5;
 	double JUMP = 15;
@@ -246,6 +254,7 @@ void readEvents(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 	const Uint8* state = SDL_GetKeyboardState(NULL);
 	SDL_Event event;
 	velocity v;
+	ws.appliedForce = { 0,0 };
 	if (state[SDL_SCANCODE_LEFT]) {
 		ws.movement = v.MOVEMENT * -1;
 	}
@@ -257,17 +266,17 @@ void readEvents(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 			ws.movement = 0;
 		}
 	}
-	if (ws.speedX < ws.movement && ws.movement > 0) {
-		ws.speedX = ws.movement;
+	/*if (ws.playerVelocity.x < ws.movement && ws.movement > 0) {
+		ws.playerVelocity.x = ws.movement;
 	}
-	if (ws.speedX > ws.movement && ws.movement < 0) {
-		ws.speedX = ws.movement;
-	}
+	if (ws.playerVelocity.x > ws.movement && ws.movement < 0) {
+		ws.playerVelocity.x = ws.movement;
+	}*/
 
 	while (SDL_PollEvent(&event)){
 		if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_UP && ws.jumps < 2) {
 			ws.jumps++;
-			ws.speedY = v.JUMP * -1;
+			ws.playerVelocity.y = v.JUMP * -1;
 			ws.ground = false;
 		}
 		if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_RIGHT) 
@@ -287,29 +296,65 @@ void readEvents(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 			ws.amountOfHookTicks = 1;
 		}
 	}
-	if (ws.ground == false) {
-		if (!ws.hookConnected)
-			ws.speedY += v.GRAVITY;
-		else
-			if(ws.speedY <= 0)
-				ws.speedY += v.GRAVITY;
-	}
-	else {
-		ws.speedY = 0;
-		ws.jumps = 0;
-		if (ws.speedX > v.GROUND_FRICTION) {
-			ws.speedX += v.GROUND_FRICTION * -1;
-		}
-		else {
-			if (ws.speedX < v.GROUND_FRICTION * -1) {
-				ws.speedX += v.GROUND_FRICTION;
-			}
-			else {
-				ws.speedX = 0;
-			}
-		}
-	}
 }
+/*func _physics_process(_delta: float) -> void:
+# Walking
+var walk = (Input.get_action_strength("right") - Input.get_action_strength("left")) * MOVE_SPEED
+
+# Falling
+velocity.y += GRAVITY
+
+# Hook physics
+if $Chain.hooked:
+# `to_local($Chain.tip).normalized()` is the direction that the chain is pulling
+chain_velocity = to_local($Chain.tip).normalized() * CHAIN_PULL
+if chain_velocity.y > 0:
+# Pulling down isn't as strong
+chain_velocity.y *= 0.55
+else:
+# Pulling up is stronger
+chain_velocity.y *= 1.65
+if sign(chain_velocity.x) != sign(walk) :
+# if we are trying to walk in a different
+	# direction than the chain is pulling
+	# reduce its pull
+	chain_velocity.x *= 0.7
+else:
+# Not hooked->no chain velocity
+chain_velocity = Vector2(0, 0)
+velocity += chain_velocity
+
+velocity.x += walk		# apply the walking
+move_and_slide(velocity, Vector2.UP)	# Actually apply all the forces
+velocity.x -= walk		# take away the walk speed again
+# ^ This is done so we don't build up walk speed over time
+
+# Manage friction and refresh jump and stuff
+velocity.y = clamp(velocity.y, -MAX_SPEED, MAX_SPEED)	# Make sure we are in our limits
+velocity.x = clamp(velocity.x, -MAX_SPEED, MAX_SPEED)
+var grounded = is_on_floor()
+if grounded:
+velocity.x *= FRICTION_GROUND	# Apply friction only on x(we are not moving on y anyway)
+can_jump = true 				# We refresh our air - jump
+if velocity.y >= 5:		# Keep the y - velocity small such that
+velocity.y = 5		# gravity doesn't make this number huge
+elif is_on_ceiling() and velocity.y <= -5:	# Same on ceilings
+velocity.y = -5
+
+# Apply air friction
+if !grounded:
+velocity.x *= FRICTION_AIR
+if velocity.y > 0:
+velocity.y *= FRICTION_AIR
+
+# Jumping
+if Input.is_action_just_pressed("jump") :
+	if grounded :
+		velocity.y = -JUMP_FORCE	# Apply the jump - force
+		elif can_jump :
+can_jump = false	# Used air - jump
+velocity.y = -JUMP_FORCE
+*/
 
 void handle_camera(WorldState& ws) {
 	camera.x = (ws.player.x + ws.player.w / 2) - SCREEN_WIDTH  /  2;
@@ -328,6 +373,7 @@ void handle_camera(WorldState& ws) {
 void mutateWorldState(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 	vector2 hookPull = { 0,0 };
 	vector2 speedVector = { 0,0 };
+	velocity v;	
 	if (ws.hookFlying && !ws.hookConnected && !ws.hookNotConnected) {
 		vector2 direction = calculateDirection(ws.player, ws.hookGoal);
 		ws.hookPosition.x = ws.player.x + ws.player.w / 2 + (direction.x * (ws.HOOKFLYINGSPEED * ws.amountOfHookTicks));
@@ -363,47 +409,68 @@ void mutateWorldState(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 	}
 	if (ws.hookConnected) {
 		hookPull = calculateDirection(ws.player, ws.hookGoal);
-		speedVector.y += hookPull.y * ws.HOOKSTRENGHT;
-		cout << hookPull.y * ws.HOOKSTRENGHT << endl;
+		if (hookPull.y < 0)
+			speedVector.y += hookPull.y * ws.HOOKSTRENGHT * 1.5;
+		else
+			speedVector.y += hookPull.y * ws.HOOKSTRENGHT * 0.85;
+		if (hookPull.x < 0 && ws.movement < 0)
+			speedVector.x += hookPull.x * ws.HOOKSTRENGHT * 0.9;
+		else
+			speedVector.x += hookPull.x * ws.HOOKSTRENGHT;
 	}
 
+	if (ws.ground == false) {
+		ws.appliedForce.y += v.GRAVITY;
+		ws.appliedForce.x *= v.AIR_FRICTION;
+	}
+	else {
+		ws.jumps = 0;
+		if (ws.playerVelocity.x > v.GROUND_FRICTION) {
+			ws.playerVelocity.x += v.GROUND_FRICTION * -1;
+		}
+		else {
+			ws.playerVelocity.x += v.GROUND_FRICTION;
+		}
+	}
 	ws.ground = false;
-	speedVector.y += ws.speedY;
-	ws.player.y += speedVector.y;
+
+	ws.playerVelocity += ws.appliedForce;
+	ws.playerVelocity.x = SDL_clamp(ws.playerVelocity.x, -v.MAXSPEED, v.MAXSPEED);
+	ws.playerVelocity.y = SDL_clamp(ws.playerVelocity.y, -v.MAXSPEED, v.MAXSPEED);
+	ws.player.y += ws.playerVelocity.y + speedVector.y;
 
 	for (const auto& obstacle : obstacles) {
 		if (SDL_HasIntersectionF(&ws.player, &obstacle)) {
-			if (speedVector.y > 0) {
+			if (ws.playerVelocity.y + speedVector.y > 0) {
 				ws.player.y = obstacle.y - ws.player.h;
 				ws.ground = true;
-				ws.speedY = 0;
+				ws.playerVelocity.y = 0;
 			}
 			else {
 				ws.player.y = obstacle.y + obstacle.h;
 				ws.ground = false;
-				ws.speedY = 0;
+				ws.playerVelocity.y = 0;
 			}
 		}
 	}
-	if (ws.hookConnected) {
-		speedVector.x += hookPull.x * ws.HOOKSTRENGHT;
-	}
 
-	//ws.speedX += ws.movement;
-	speedVector.x += ws.speedX;
-	ws.player.x += speedVector.x;
+	ws.player.x += ws.playerVelocity.x + ws.movement + speedVector.x;
 	//ws.speedX -= ws.movement;
 	for (const auto& obstacle : obstacles) {
 		if (SDL_HasIntersectionF(&ws.player, &obstacle)) {
-			if (speedVector.x > 0) {
+			if (ws.playerVelocity.x+ws.movement+ speedVector.x > 0) {
 				ws.player.x = obstacle.x - ws.player.w;
-				ws.speedX = 0;
+				ws.playerVelocity.x = 0;
 			}
 			else {
 				ws.player.x = obstacle.x + obstacle.w;
-				ws.speedX = 0;
+				ws.playerVelocity.x = 0;
 			}
 		}
+	}
+
+	if (ws.playerVelocity.x < 1 && ws.playerVelocity.x > -1) {
+		ws.playerVelocity.x = 0;
 	}
 }
 
