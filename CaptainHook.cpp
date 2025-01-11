@@ -1,10 +1,14 @@
-#include <SDL.h>
+﻿#include <SDL.h>
 #include<vector> 
 #include<SDL_image.h>
 #include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string>
 
-#define SCREEN_WIDTH 850
-#define SCREEN_HEIGHT  600
+#define SCREEN_WIDTH 850 *1.5
+#define SCREEN_HEIGHT  600 *1.5
+#define TILESIZE 32
 
 using namespace std;
 extern "C"
@@ -14,10 +18,11 @@ struct WorldState {
 	SDL_Renderer* renderer;
 	SDL_Surface* image;
 	SDL_Texture* texture;
-	SDL_FRect player = { 100, 100, 50, 50 };
-	SDL_Rect camera = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
+	SDL_FRect player = { 2*TILESIZE, 2*TILESIZE, TILESIZE, TILESIZE };
 	SDL_FPoint hookGoal = { 0, 0 };
 	SDL_FPoint hookPosition = { 0, 0 };
+	SDL_Rect spriteSheet[16][12] = { 0, 0, TILESIZE , TILESIZE };
+	vector<vector<int>>  map;
 	bool hookFlying = false;
 	bool hookConnected = false;
 	bool hookNotConnected = false;
@@ -31,11 +36,17 @@ struct WorldState {
 	bool ground = false;
 	int jumps = 0;
 	double movement = 0;
+
 };
 
 struct vector2 {
 	float x, y;
 };
+
+struct {
+	float x;
+	float y;
+} camera = { 0, 0, };
 
 struct velocity {
 	double MAXSPEED = 1000;
@@ -46,19 +57,175 @@ struct velocity {
 	double GRAVITY = 1;
 };
 
+enum obstacleID {
+	EMPTY,	//1
+	EARTH,		//2
+	UGRASS,	//3
+	RGRASS,	//4
+	DGRASS,	//5
+	LGRASS,	//6
+	KIRBY1,	
+	KIRBY2,
+	DUDE1,
+	DUDE2,
+
+};
+
+vector<SDL_FRect> obstacles;
+
+void drawObstacle(const WorldState& ws, SDL_FRect destRect,int obstacleValue)
+{
+	obstacleID obstacle = static_cast<obstacleID>(obstacleValue);
+
+	switch (obstacle) {
+	case (EMPTY):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[6][0], &destRect);    break;
+		break;
+	case (EARTH):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[1][0], &destRect);    break;
+		break;
+	case (UGRASS):
+		printf("Object: UGRASS\n");
+		break;
+	case (RGRASS):
+		printf("Object: RGRASS\n");
+		break;
+	case (DGRASS):
+		printf("Object: DGRASS\n");
+		break;
+	case (LGRASS):
+		printf("Object: LGRASS\n");
+		break;
+	case (KIRBY1):
+		printf("Object: KIRBY1\n");
+		break;
+	case (KIRBY2):
+		printf("Object: KIRBY2\n");
+		break;
+	case (DUDE1):
+		printf("Object: DUDE1\n");
+		break;
+	case (DUDE2):
+		printf("Object: DUDE2\n");
+		break;
+	default:
+		printf("Unknown object\n");
+		break;
+	}
+
+}
+
+void getMap(WorldState& ws, vector<SDL_FRect>& obstacles, const string& level)
+{
+	cout << "Loading level file: " << level << endl;
+	ifstream file(level);
+	string line;
+
+	if (file.is_open()) {
+		int row = 0;
+		while (getline(file, line)) {
+			stringstream ss(line);
+			string number;
+			vector<int> rowData;
+
+			// Strip '{' and '}' and other non-digit characters
+			line.erase(remove_if(line.begin(), line.end(), [](unsigned char c) {
+				return c == '{' || c == '}' || c == ' ';
+				}), line.end());
+
+			// Now split the line by commas
+			stringstream rowStream(line);
+		
+			while (getline(rowStream, number, ',')) {
+					// Remove non-digit characters (if any left after erase)
+					number.erase(remove_if(number.begin(), number.end(),
+					[](unsigned char c) { return !isdigit(c); }),
+					number.end());
+
+					if (!number.empty()) {
+					{
+						int value = stoi(number);
+						rowData.push_back(value);
+
+						//if (value > 0) {
+						//	SDL_FRect rect = {
+						//		static_cast<float>(rowData.size()) * TILESIZE,
+						//		static_cast<float>(row ) * TILESIZE,
+						//		TILESIZE,
+						//		TILESIZE
+						//	};
+						//	obstacles.push_back(rect);
+						//}
+					}
+				}
+			}
+			ws.map.push_back(rowData);
+			row++;
+		}
+		file.close();
+	}
+	else {
+		cerr << "No file: " << level << " found" << endl;
+	}
+	/* Optionally print the levelData for verification
+	std::cout << "Level data loaded:" << std::endl;
+	for (const auto& row : ws.map) {
+		for (const auto& value : row) {
+			std::cout << value << " ";
+		}
+		std::cout << std::endl;
+	}*/
+}
+
+void loadLevelAndDraw(WorldState& ws, vector<SDL_FRect>& obstacles)
+{
+	obstacles.clear();
+	for (int row = 0; row < ws.map.size(); row++){
+		for (int col = 0; col < ws.map[row].size(); col++){
+			int value = ws.map[row][col];
+
+			if (value > 0) {
+				SDL_FRect rect = {
+					col * TILESIZE,
+					row * TILESIZE,
+					TILESIZE,
+					TILESIZE
+				};
+				if (obstacles.empty() || obstacles.back().x != rect.x || obstacles.back().y != rect.y) {
+					obstacles.push_back(rect);
+				}
+				drawObstacle(ws, rect, value);
+			}
+		}
+	}
+}
+
+
 void initWorldState(WorldState& ws) {
 	ws.window = SDL_CreateWindow("Captain Hook", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
 	ws.renderer = SDL_CreateRenderer(ws.window, -1, SDL_RENDERER_PRESENTVSYNC);
+	ws.texture = IMG_LoadTexture(ws.renderer, "C:/Users/wolki/source/repos/CaptainHook/Images/grass_main.png");
 	SDL_Init(SDL_INIT_EVERYTHING);
+	SDL_Init(IMG_INIT_PNG);
 
 	if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
+		printf("Ey ne Fehlermeldung w�re ganz nett");
 		exit(0);
 	}
 
 	if (!(IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG)) {
+		printf("Ey ne Fehlermeldung w�re ganz nett");
 		SDL_Quit();
 		exit(0);
 	}
+
+	if (!ws.texture) {
+		printf("Keine Texture gefunden");
+		exit(0);
+	}
+	string file = "C:/Users/wolki/source/repos/CaptainHook/levels/map.txt";
+	getMap(ws, obstacles, file);
+	loadLevelAndDraw(ws, obstacles);
 }
 
 vector2 calculateDirection(const SDL_FRect& player, const SDL_FPoint& hookGoal) {
@@ -101,8 +268,8 @@ void readEvents(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 		}
 		if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_RIGHT) 
 		{
-			ws.hookGoal.x = event.button.x + ws.camera.x;
-			ws.hookGoal.y = event.button.y + ws.camera.y;
+			ws.hookGoal.x = event.button.x + camera.x;
+			ws.hookGoal.y = event.button.y + camera.y;
 			ws.hookNotConnected = false;
 			ws.hookFlying = true;
 			ws.amountOfHookTicks = 1;
@@ -137,17 +304,17 @@ void readEvents(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 }
 
 void handle_camera(WorldState& ws) {
-	ws.camera.x = (ws.player.x + ws.player.w / 2) - SCREEN_WIDTH  /  2;
-	ws.camera.y = (ws.player.y + ws.player.h / 2) - SCREEN_HEIGHT / 2;
+	camera.x = (ws.player.x + ws.player.w / 2) - SCREEN_WIDTH  /  2;
+	camera.y = (ws.player.y + ws.player.h / 2) - SCREEN_HEIGHT / 2;
 	
-	if (ws.camera.x < 0)
+	/*if (camera.x < 0)
 	{
-		ws.camera.x = 0;
+		camera.x = 0;
 	}
-	if (ws.camera.y < 0)
+	if (camera.y < 0)
 	{
-		ws.camera.y = 0;
-	}
+		camera.y = 0;
+	}*/
 }
 
 void mutateWorldState(WorldState& ws, const vector<SDL_FRect>& obstacles) {
@@ -219,22 +386,44 @@ void mutateWorldState(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 	}
 }
 
+void initSpriteSheet(WorldState& ws) {
+	for (int i = 0; i < 16; i++)
+	{
+		for (int j = 0; j < 11; j++)
+		{
+			ws.spriteSheet[i][j].x = 64 * i;
+			ws.spriteSheet[i][j].y = 64 * j;
+			ws.spriteSheet[i][j].w = 64;
+			ws.spriteSheet[i][j].h = 64;
+		}
+	}
+}
+
 void renderGraphics(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 	SDL_SetRenderDrawColor(ws.renderer, 0, 0, 0, 255);
 	SDL_RenderClear(ws.renderer);
 	if (ws.hookFlying || ws.hookConnected || ws.hookNotConnected) {
 		SDL_SetRenderDrawColor(ws.renderer, 0, 255, 0, 255);
-		SDL_RenderDrawLine(ws.renderer, ws.player.x - ws.camera.x + ws.player.w / 2, ws.player.y - ws.camera.y + ws.player.h / 2, ws.hookPosition.x - ws.camera.x, ws.hookPosition.y - ws.camera.y);
+		SDL_RenderDrawLine(ws.renderer, ws.player.x - camera.x + ws.player.w / 2, ws.player.y - camera.y + ws.player.h / 2, ws.hookPosition.x - camera.x, ws.hookPosition.y - camera.y);
 	}
 
 	SDL_SetRenderDrawColor(ws.renderer, 255, 0, 0, 255);
 	for (const auto& obstacle : obstacles) {
-		SDL_Rect obstacleRect = { static_cast<int>(obstacle.x - ws.camera.x), static_cast<int>(obstacle.y - ws.camera. y), static_cast<int>(obstacle.w), static_cast<int>(obstacle.h) };
-		SDL_RenderFillRect(ws.renderer, &obstacleRect);
+		SDL_FRect rect = obstacle;
+		rect.x = rect.x - camera.x;
+		rect.y = rect.y - camera.y;
+
+		// Check if the obstacle is within the camera's bounds (screen view)
+		if (rect.x + rect.w > 0 && rect.x < SCREEN_WIDTH && rect.y + rect.h > 0 && rect.y < SCREEN_HEIGHT) {
+			/*int obstacleValue = ws.map[static_cast<int>(rect.x/TILESIZE)][static_cast<int>(rect.y/TILESIZE)];
+			drawObstacle(ws, rect, obstacleValue);*/
+			SDL_RenderFillRectF(ws.renderer, &rect);
+		}
 	}
+	
 
 	SDL_SetRenderDrawColor(ws.renderer, 0, 0, 255, 255);
-	SDL_Rect playerRect = { ws.player.x - ws.camera.x, ws.player.y - ws.camera.y, ws.player.w, ws.player.h };
+	SDL_Rect playerRect = { ws.player.x - camera.x, ws.player.y - camera.y, ws.player.w, ws.player.h };
 	SDL_RenderFillRect(ws.renderer, &playerRect);
 	SDL_RenderPresent(ws.renderer);
 	
@@ -243,15 +432,16 @@ void renderGraphics(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 int main(int argc, char* args[])
 {
 	WorldState worldState;
+	initSpriteSheet(worldState);
 	initWorldState(worldState);
-	vector<SDL_FRect> obstacles = {
-		{0, 550, 1050, 50}, // Example ground object
-		{200, 400, 100, 50}, // Example obstacle
-		{400, 300, 350, 50},  // Another example obstacle
-		{850, 200, 50, 300},  // Wall example obstacle
-		{750, 850, 1050, 50 }, // Example ground object
-		{1500, 650, 50, 50 }, // Example ground object
-	};
+	 //obstacles = {
+		//{0, 550, 1050, TILESIZE}, // Example ground object
+		//{200, 400, 100, TILESIZE}, // Example obstacle
+		//{400, 300, 350, TILESIZE},  // Another example obstacle
+		//{850, 200, TILESIZE, 300},  // Wall example obstacle
+		//{750, 850, 1050, TILESIZE }, // Example ground object
+		//{1500, 650, TILESIZE, TILESIZE }, // Example ground object
+	//};
 
 	while (true) {
 		readEvents(worldState, obstacles);

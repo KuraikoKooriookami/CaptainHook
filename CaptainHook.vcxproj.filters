@@ -34,4 +34,12 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="Images\grass_main.png">
+      <Filter>Ressourcendateien</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="levels\map.txt" />
+  </ItemGroup>
 </Project>
