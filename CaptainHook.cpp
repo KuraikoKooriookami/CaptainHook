@@ -28,7 +28,8 @@ struct WorldState {
 	bool hookNotConnected = false;
 	int amountOfHookTicks = 1;
 	float MAXHOOKLENGTH = 1000;
-	float HOOKFLYINGSPEED = 2;
+	float HOOKFLYINGSPEED = 10;
+	float HOOKSTRENGHT = 7.5;
 	float currentHookLength = 0;
 	double hookLength = 0;
 	double speedX = 0;
@@ -53,8 +54,8 @@ struct velocity {
 	double MOVEMENT = 5;
 	double AIR_FRICTION = 0.95;
 	double GROUND_FRICTION = 0.5;
-	double JUMP = 20;
-	double GRAVITY = 1;
+	double JUMP = 15;
+	double GRAVITY = 0.5;
 };
 
 enum obstacleID {
@@ -284,7 +285,11 @@ void readEvents(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 		}
 	}
 	if (ws.ground == false) {
-		ws.speedY += v.GRAVITY;
+		if (!ws.hookConnected)
+			ws.speedY += v.GRAVITY;
+		else
+			if(ws.speedY <= 0)
+				ws.speedY += v.GRAVITY;
 	}
 	else {
 		ws.speedY = 0;
@@ -318,10 +323,10 @@ void handle_camera(WorldState& ws) {
 }
 
 void mutateWorldState(WorldState& ws, const vector<SDL_FRect>& obstacles) {
-
+	vector2 hookPull = { 0,0 };
+	vector2 speedVector = { 0,0 };
 	if (ws.hookFlying && !ws.hookConnected && !ws.hookNotConnected) {
 		vector2 direction = calculateDirection(ws.player, ws.hookGoal);
-
 		ws.hookPosition.x = ws.player.x + ws.player.w / 2 + (direction.x * (ws.HOOKFLYINGSPEED * ws.amountOfHookTicks));
 		ws.hookPosition.y = ws.player.y + ws.player.h / 2 + (direction.y * (ws.HOOKFLYINGSPEED * ws.amountOfHookTicks));
 		ws.amountOfHookTicks++;
@@ -353,11 +358,19 @@ void mutateWorldState(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 			}
 		}
 	}
+	if (ws.hookConnected) {
+		hookPull = calculateDirection(ws.player, ws.hookGoal);
+		speedVector.y += hookPull.y * ws.HOOKSTRENGHT;
+		cout << hookPull.y * ws.HOOKSTRENGHT << endl;
+	}
+
 	ws.ground = false;
-	ws.player.y += ws.speedY;
+	speedVector.y += ws.speedY;
+	ws.player.y += speedVector.y;
+
 	for (const auto& obstacle : obstacles) {
 		if (SDL_HasIntersectionF(&ws.player, &obstacle)) {
-			if (ws.speedY > 0) {
+			if (speedVector.y > 0) {
 				ws.player.y = obstacle.y - ws.player.h;
 				ws.ground = true;
 				ws.speedY = 0;
@@ -369,12 +382,17 @@ void mutateWorldState(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 			}
 		}
 	}
-	ws.speedX += ws.movement;
-	ws.player.x += ws.speedX;
-	ws.speedX -= ws.movement;
+	if (ws.hookConnected) {
+		speedVector.x += hookPull.x * ws.HOOKSTRENGHT;
+	}
+
+	//ws.speedX += ws.movement;
+	speedVector.x += ws.speedX;
+	ws.player.x += speedVector.x;
+	//ws.speedX -= ws.movement;
 	for (const auto& obstacle : obstacles) {
 		if (SDL_HasIntersectionF(&ws.player, &obstacle)) {
-			if (ws.speedX > 0) {
+			if (speedVector.x > 0) {
 				ws.player.x = obstacle.x - ws.player.w;
 				ws.speedX = 0;
 			}
