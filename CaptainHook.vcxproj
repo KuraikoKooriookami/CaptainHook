@@ -137,7 +137,12 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="Images\desert_main.png" />
+    <Image Include="Images\generic_unhookable.png" />
     <Image Include="Images\grass_main.png" />
+    <Image Include="Images\jungle_main.png" />
+    <Image Include="Images\jungle_unhookables.png" />
+    <Image Include="Images\winter_main.png" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="levels\map.txt" />

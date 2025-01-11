@@ -205,7 +205,10 @@ void loadLevelAndDraw(WorldState& ws, vector<SDL_FRect>& obstacles)
 void initWorldState(WorldState& ws) {
 	ws.window = SDL_CreateWindow("Captain Hook", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
 	ws.renderer = SDL_CreateRenderer(ws.window, -1, SDL_RENDERER_PRESENTVSYNC);
-	ws.texture = IMG_LoadTexture(ws.renderer, "C:/Users/wolki/source/repos/CaptainHook/Images/grass_main.png");
+
+	char* basePath = SDL_GetBasePath();
+	string texturePath = string(basePath) + "../../Images/grass_main.png";
+	ws.texture = IMG_LoadTexture(ws.renderer, texturePath.c_str());
 	SDL_Init(SDL_INIT_EVERYTHING);
 	SDL_Init(IMG_INIT_PNG);
 
@@ -224,7 +227,7 @@ void initWorldState(WorldState& ws) {
 		printf("Keine Texture gefunden");
 		exit(0);
 	}
-	string file = "C:/Users/wolki/source/repos/CaptainHook/levels/map.txt";
+	string file = string(basePath)+"../../levels/map.txt";
 	getMap(ws, obstacles, file);
 	loadLevelAndDraw(ws, obstacles);
 }
