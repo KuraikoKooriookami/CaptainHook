@@ -28,6 +28,7 @@ struct WorldState {
 	SDL_Renderer* renderer;
 	SDL_Surface* image;
 	SDL_Texture* texture;
+	SDL_Texture* texture2;
 	SDL_FRect player = { 2*TILESIZE, 2*TILESIZE, TILESIZE, TILESIZE };
 	SDL_FPoint hookGoal = { 0, 0 };
 	SDL_FPoint hookPosition = { 0, 0 };
@@ -37,7 +38,7 @@ struct WorldState {
 	vector2 appliedForce = { 0, 0 };
 	bool hookFlying = false;
 	bool hookConnected = false;
-	bool hookNoObstacleFound = false;
+	bool hookNoObstacleFound = true;
 	int amountOfHookTicks = 1;
 	float MAXHOOKLENGTH = 1000;
 	float HOOKFLYINGSPEED = 25;
@@ -67,32 +68,33 @@ struct velocity {
 };
 
 enum obstacleID { //UDLR = Directions, C = curved
-	EMPTY,				//0
-	EARTH,					//1
-	U_GRASS,				//2
-	R_GRASS,				//3
-	D_GRASS,				//4
-	L_GRASS,				//5
-	ULC_GRASS,		//6
-	URC_GRASS,		//7
-	DLC_GRASS,			//8
-	DRC_GRASS,		//9
-	RC_GRASS,			//10
-	LC_GRASS,			//11
-	UR_GRASS,			//12
-	UL_GRASS,			//13
-	DL_GRASS,			//14
-	DR_GRASS,			//15
-	R_EARTH,				//16
-	D_EARTH,				//17
-	L_EARTH,				//18
-	DLC_EARTH,			//19
-	DRC_EARTH,			//20
-	DLCORNER_EARTH,
-	DRCORNER_EARTH,
+	EMPTY,					//0
+	EARTH,						//1
+	U_GRASS,					//2
+	R_GRASS,					//3
+	D_GRASS,					//4
+	L_GRASS,					//5
+	ULC_GRASS,			//6
+	URC_GRASS,			//7
+	DLC_GRASS,				//8
+	DRC_GRASS,			//9
+	RC_GRASS,				//10
+	LC_GRASS,				//11
+	UR_GRASS,				//12
+	UL_GRASS,				//13
+	DL_GRASS,				//14
+	DR_GRASS,				//15
+	R_EARTH,					//16
+	D_EARTH,					//17
+	L_EARTH,					//18
+	DLC_EARTH,				//19
+	DRC_EARTH,				//20
+	DLCORNER_EARTH, //21
+	DRCORNER_EARTH, //22
 	KIRBY2,
 	DUDE1,
 	DUDE2,
+	UNHOOKABLE 
 
 };
 
@@ -149,6 +151,9 @@ void drawObstacle(const WorldState& ws, SDL_FRect destRect,int obstacleValue)
 		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[6][3], &destRect);    break;
 	case (DRCORNER_EARTH):
 		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[5][3], &destRect);    break;
+
+	case (UNHOOKABLE):
+		SDL_RenderCopyF(ws.renderer, ws.texture2, &ws.spriteSheet[0][1], &destRect);	break;
 	default:
 		printf("Unknown object\n");
 		break;
@@ -248,7 +253,10 @@ void initWorldState(WorldState& ws) {
 
 	char* basePath = SDL_GetBasePath();
 	string texturePath = string(basePath) + "../../Images/grass_main.png";
+	string texturePath2 = string(basePath) + "../../Images/generic_unhookable.png";
 	ws.texture = IMG_LoadTexture(ws.renderer, texturePath.c_str());
+	ws.texture2 = IMG_LoadTexture(ws.renderer, texturePath2.c_str());
+
 	SDL_Init(SDL_INIT_EVERYTHING);
 	SDL_Init(IMG_INIT_PNG);
 
