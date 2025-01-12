@@ -457,19 +457,39 @@ void renderGraphics(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 	}
 
 	SDL_SetRenderDrawColor(ws.renderer, 255, 0, 0, 255);
-	for (const auto& obstacle : obstacles) {
-		SDL_FRect rect = obstacle;
-		rect.x = rect.x - camera.x;
-		rect.y = rect.y - camera.y;
+	//for (const auto& obstacle : obstacles) {
+	//	SDL_FRect rect = obstacle;
+	//	rect.x = rect.x - camera.x;
+	//	rect.y = rect.y - camera.y;
 
-		// Check if the obstacle is within the camera's bounds (screen view)
-		if (rect.x + rect.w > 0 && rect.x < SCREEN_WIDTH && rect.y + rect.h > 0 && rect.y < SCREEN_HEIGHT) {
-			/*int obstacleValue = ws.map[static_cast<int>(rect.x/TILESIZE)][static_cast<int>(rect.y/TILESIZE)];
-			drawObstacle(ws, rect, obstacleValue);*/
-			SDL_RenderFillRectF(ws.renderer, &rect);
+	//	// Check if the obstacle is within the camera's bounds (screen view)
+	//	if (rect.x + rect.w > 0 && rect.x < SCREEN_WIDTH && rect.y + rect.h > 0 && rect.y < SCREEN_HEIGHT) {
+	//		int obstacleValue = ws.map[static_cast<int>(rect.x/TILESIZE)][static_cast<int>(rect.y/TILESIZE)];
+	//		drawObstacle(ws, rect, obstacleValue);
+	//		//SDL_RenderFillRectF(ws.renderer, &rect);
+	//	}
+	//}
+
+	int mapHeight = ws.map.size();
+	int i = 0;
+	for (int row = 0; row < mapHeight; row++) {
+		int mapWidth = ws.map[row].size();
+		for (int col = 0; col < mapWidth; col++) {
+			int tileValue = ws.map[row][col];
+			if (tileValue > 0) {
+				SDL_FRect rect = obstacles[i];
+				i++;
+
+				rect.x -= camera.x;
+				rect.y -= camera.y;
+				
+				if (rect.x + rect.w > 0 && rect.x < SCREEN_WIDTH && rect.y + rect.h > 0 && rect.y < SCREEN_HEIGHT) {
+					drawObstacle(ws, rect, ws.map[row][col]);
+				}
+			}
 		}
 	}
-	
+
 
 	SDL_SetRenderDrawColor(ws.renderer, 0, 0, 255, 255);
 	SDL_Rect playerRect = { ws.player.x - camera.x, ws.player.y - camera.y, ws.player.w, ws.player.h };
