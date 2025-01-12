@@ -94,7 +94,9 @@ enum obstacleID { //UDLR = Directions, C = curved
 	KIRBY2,
 	DUDE1,
 	DUDE2,
-	UNHOOKABLE 
+	UNHOOKABLE,
+	URCLONGER_GRASS,
+	ULCLONGER_GRASS,
 
 };
 
@@ -151,6 +153,10 @@ void drawObstacle(const WorldState& ws, SDL_FRect destRect,int obstacleValue)
 		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[6][3], &destRect);    break;
 	case (DRCORNER_EARTH):
 		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[5][3], &destRect);    break;
+	case (ULCLONGER_GRASS):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[0][2], &destRect);    break;
+	case (URCLONGER_GRASS):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[1][2], &destRect);    break;
 
 	case (UNHOOKABLE):
 		SDL_RenderCopyF(ws.renderer, ws.texture2, &ws.spriteSheet[0][1], &destRect);	break;
