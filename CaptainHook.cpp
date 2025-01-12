@@ -58,7 +58,7 @@ struct {
 } camera = { 0, 0, };
 
 struct velocity {
-	double MAXSPEED = 100;
+	double MAXSPEED = 10;
 	double MOVEMENT = 7.5;
 	double AIR_FRICTION = 0.95;
 	double GROUND_FRICTION = 0.5;
@@ -384,13 +384,11 @@ void mutateWorldState(WorldState& ws, const vector<SDL_FRect>& obstacles) {
 		}
 		if (speedVector.y > 0 && speedVector.y > ws.appliedForce.y) {
 			ws.appliedForce.y += speedVector.y;
-			if (ws.appliedForce.y > 0)
-				ws.appliedForce.y = 0;
+			ws.appliedForce.y += v.GRAVITY *-1;
 		}
 		if (speedVector.y < 0 && speedVector.y < ws.appliedForce.y) {
 			ws.appliedForce.y += speedVector.y;
-			if (ws.appliedForce.y < 0)
-				ws.appliedForce.y = 0;
+			ws.appliedForce.y += v.GRAVITY;
 		}
 	}
 
