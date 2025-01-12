@@ -66,14 +66,30 @@ struct velocity {
 	double GRAVITY = 0.5;
 };
 
-enum obstacleID {
-	EMPTY,	//1
-	EARTH,		//2
-	UGRASS,	//3
-	RGRASS,	//4
-	DGRASS,	//5
-	LGRASS,	//6
-	KIRBY1,	
+enum obstacleID { //UDLR = Directions, C = curved
+	EMPTY,				//0
+	EARTH,					//1
+	U_GRASS,				//2
+	R_GRASS,				//3
+	D_GRASS,				//4
+	L_GRASS,				//5
+	ULC_GRASS,		//6
+	URC_GRASS,		//7
+	DLC_GRASS,			//8
+	DRC_GRASS,		//9
+	RC_GRASS,			//10
+	LC_GRASS,			//11
+	UR_GRASS,			//12
+	UL_GRASS,			//13
+	DL_GRASS,			//14
+	DR_GRASS,			//15
+	R_EARTH,				//16
+	D_EARTH,				//17
+	L_EARTH,				//18
+	DLC_EARTH,			//19
+	DRC_EARTH,			//20
+	DLCORNER_EARTH,
+	DRCORNER_EARTH,
 	KIRBY2,
 	DUDE1,
 	DUDE2,
@@ -89,34 +105,50 @@ void drawObstacle(const WorldState& ws, SDL_FRect destRect,int obstacleValue)
 	switch (obstacle) {
 	case (EMPTY):
 		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[6][0], &destRect);    break;
-		break;
 	case (EARTH):
 		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[1][0], &destRect);    break;
-		break;
-	case (UGRASS):
-		printf("Object: UGRASS\n");
-		break;
-	case (RGRASS):
-		printf("Object: RGRASS\n");
-		break;
-	case (DGRASS):
-		printf("Object: DGRASS\n");
-		break;
-	case (LGRASS):
-		printf("Object: LGRASS\n");
-		break;
-	case (KIRBY1):
-		printf("Object: KIRBY1\n");
-		break;
-	case (KIRBY2):
-		printf("Object: KIRBY2\n");
-		break;
-	case (DUDE1):
-		printf("Object: DUDE1\n");
-		break;
-	case (DUDE2):
-		printf("Object: DUDE2\n");
-		break;
+	case (U_GRASS):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[0][1], &destRect);    break;
+	case (R_GRASS):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[1][1], &destRect);    break;
+	case (D_GRASS):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[2][1], &destRect);    break;
+	case (L_GRASS):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[3][1], &destRect);    break;
+	case (ULC_GRASS):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[4][0], &destRect);    break;
+	case (URC_GRASS):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[5][0], &destRect);    break;
+	case (DLC_GRASS):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[3][2], &destRect);    break;
+	case (DRC_GRASS):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[2][2], &destRect);    break;
+	case (RC_GRASS):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[6][2], &destRect);    break;
+	case (LC_GRASS):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[6][1], &destRect);    break;
+	case (UR_GRASS):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[1][3], &destRect);    break;
+	case (UL_GRASS):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[0][3], &destRect);    break;
+	case (DL_GRASS):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[2][10], &destRect);    break;
+	case (DR_GRASS):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[2][10], &destRect);    break;
+	case (R_EARTH):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[5][1], &destRect);    break;
+	case (D_EARTH):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[4][3], &destRect);    break;
+	case (L_EARTH):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[4][1], &destRect);    break;
+	case (DLC_EARTH):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[4][2], &destRect);    break;
+	case (DRC_EARTH):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[5][2], &destRect);    break;
+	case (DLCORNER_EARTH):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[6][3], &destRect);    break;
+	case (DRCORNER_EARTH):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[5][3], &destRect);    break;
 	default:
 		printf("Unknown object\n");
 		break;
