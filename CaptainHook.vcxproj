@@ -129,6 +129,7 @@
   <ItemGroup>
     <ClCompile Include="CameraState.cpp" />
     <ClCompile Include="CaptainHook.cpp" />
+    <ClCompile Include="Commons.cpp" />
     <ClCompile Include="HookState.cpp" />
     <ClCompile Include="MapState.cpp" />
     <ClCompile Include="PlayerState.cpp" />

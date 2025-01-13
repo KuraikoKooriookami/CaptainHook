@@ -30,12 +30,30 @@
     <ClCompile Include="MapState.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
+    <ClCompile Include="Commons.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Images\grass_main.png">
+      <Filter>Ressourcendateien</Filter>
+    </Image>
+    <Image Include="Images\desert_main.png">
+      <Filter>Ressourcendateien</Filter>
+    </Image>
+    <Image Include="Images\generic_unhookable.png">
+      <Filter>Ressourcendateien</Filter>
+    </Image>
+    <Image Include="Images\jungle_main.png">
+      <Filter>Ressourcendateien</Filter>
+    </Image>
+    <Image Include="Images\jungle_unhookables.png">
+      <Filter>Ressourcendateien</Filter>
+    </Image>
+    <Image Include="Images\winter_main.png">
       <Filter>Ressourcendateien</Filter>
     </Image>
   </ItemGroup>
