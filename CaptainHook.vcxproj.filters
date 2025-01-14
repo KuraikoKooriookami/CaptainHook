@@ -38,6 +38,24 @@
     <Image Include="Images\grass_main.png">
       <Filter>Ressourcendateien</Filter>
     </Image>
+    <Image Include="Images\desert_main.png">
+      <Filter>Ressourcendateien</Filter>
+    </Image>
+    <Image Include="Images\generic_unhookable.png">
+      <Filter>Ressourcendateien</Filter>
+    </Image>
+    <Image Include="Images\jungle_main.png">
+      <Filter>Ressourcendateien</Filter>
+    </Image>
+    <Image Include="Images\jungle_unhookables.png">
+      <Filter>Ressourcendateien</Filter>
+    </Image>
+    <Image Include="Images\winter_main.png">
+      <Filter>Ressourcendateien</Filter>
+    </Image>
+    <Image Include="Images\monkey.png">
+      <Filter>Ressourcendateien</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <Text Include="levels\map.txt" />

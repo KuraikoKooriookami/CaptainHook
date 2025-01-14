@@ -142,6 +142,7 @@
     <Image Include="Images\grass_main.png" />
     <Image Include="Images\jungle_main.png" />
     <Image Include="Images\jungle_unhookables.png" />
+    <Image Include="Images\monkey.png" />
     <Image Include="Images\winter_main.png" />
   </ItemGroup>
   <ItemGroup>

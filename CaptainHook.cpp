@@ -34,6 +34,7 @@ struct WorldState {
 	SDL_Surface* image;
 	SDL_Texture* texture;
 	SDL_Texture* texture2;
+	SDL_Texture* playerTexture;
 	SDL_FRect player = { 2*TILESIZE, 2*TILESIZE, TILESIZE, TILESIZE };
 	SDL_FPoint hookGoal = { 0, 0 };
 	SDL_FPoint hookPosition = { 0, 0 };
@@ -269,8 +270,11 @@ void initWorldState(WorldState& ws) {
 	char* basePath = SDL_GetBasePath();
 	string texturePath = string(basePath) + "../../Images/grass_main.png";
 	string texturePath2 = string(basePath) + "../../Images/generic_unhookable.png";
+	string texturePath3 = string(basePath) + "../../Images/monkey.png";
+
 	ws.texture = IMG_LoadTexture(ws.renderer, texturePath.c_str());
 	ws.texture2 = IMG_LoadTexture(ws.renderer, texturePath2.c_str());
+	ws.playerTexture = IMG_LoadTexture(ws.renderer, texturePath3.c_str());
 
 	SDL_Init(SDL_INIT_EVERYTHING);
 	SDL_Init(IMG_INIT_PNG);
@@ -565,7 +569,9 @@ void renderGraphics(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 
 	SDL_SetRenderDrawColor(ws.renderer, 0, 0, 255, 255);
 	SDL_Rect playerRect = { ws.player.x - camera.x, ws.player.y - camera.y, ws.player.w, ws.player.h };
-	SDL_RenderFillRect(ws.renderer, &playerRect);
+	SDL_Rect monkey = { 0, 0, 256, 256 };
+	SDL_RenderCopy(ws.renderer, ws.playerTexture, &monkey, &playerRect);
+	//SDL_RenderFillRect(ws.renderer, &playerRect);
 	SDL_RenderPresent(ws.renderer);
 	
 }
