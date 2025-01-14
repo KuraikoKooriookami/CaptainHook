@@ -47,7 +47,7 @@ struct WorldState {
 	int amountOfHookTicks = 1;
 	float MAXHOOKLENGTH = 1000;
 	float HOOKFLYINGSPEED = 25;
-	float HOOKSTRENGHT = 5;
+	float HOOKSTRENGHT = 10;
 	float currentHookLength = 0;
 	double hookLength = 0;
 	double speedX = 0;
@@ -66,8 +66,8 @@ struct {
 struct velocity {
 	double MAXSPEED = 10;
 	double MOVEMENT = 7.5;
-	double AIR_FRICTION = 0.95;
-	double GROUND_FRICTION = 0.5;
+	double AIR_FRICTION = 0.985;
+	double GROUND_FRICTION = 0.65;
 	double JUMP = 15;
 	double GRAVITY = 0.5;
 };
@@ -266,9 +266,10 @@ void initWorldState(WorldState& ws) {
 	ws.window = SDL_CreateWindow("Captain Hook", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
 	ws.renderer = SDL_CreateRenderer(ws.window, -1, SDL_RENDERER_PRESENTVSYNC);
 
-	char* basePath = SDL_GetBasePath();
-	string texturePath = string(basePath) + "../../Images/grass_main.png";
-	string texturePath2 = string(basePath) + "../../Images/generic_unhookable.png";
+	string basePath = SDL_GetBasePath();
+	basePath = basePath + "../../";
+	string texturePath = basePath + "/Images/grass_main.png";
+	string texturePath2 = basePath + "/Images/generic_unhookable.png";
 	ws.texture = IMG_LoadTexture(ws.renderer, texturePath.c_str());
 	ws.texture2 = IMG_LoadTexture(ws.renderer, texturePath2.c_str());
 
@@ -290,7 +291,7 @@ void initWorldState(WorldState& ws) {
 		printf("Keine Texture gefunden");
 		exit(0);
 	}
-	string file = string(basePath)+"../../levels/map.txt";
+	string file = string(basePath)+"/levels/map.txt";
 	getMap(ws, file);
 	loadLevelAndDraw(ws, obstacles);
 }
@@ -396,29 +397,6 @@ void mutateWorldState(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 			ws.hookFlying = false;
 		}
 	}
-	/*else {
-		if (ws.hookNoObstacleFound) {
-			vector2 direction = calculateDirection(ws.player, ws.hookGoal);
-			ws.amountOfHookTicks--;
-			ws.hookPosition.x = ws.player.x + ws.player.w/2 + (direction.x * (ws.HOOKFLYINGSPEED * ws.amountOfHookTicks));
-			ws.hookPosition.y = ws.player.y + ws.player.h/2 + (direction.y * (ws.HOOKFLYINGSPEED * ws.amountOfHookTicks));
-			if (!ws.hookConnected && abs(ws.hookPosition.x - (float(ws.player.x) + float(ws.player.w) / 2)) < 2 
-				&& abs(ws.hookPosition.y - (float(ws.player.y) + float(ws.player.h) / 2)) < 2) {
-				ws.hookNoObstacleFound = false;
-			}
-		}
-	}*/	
-	
-	if (!ws.ground && !ws.hookConnected) {
-		ws.appliedForce.y += v.GRAVITY;
-		ws.appliedForce.x *= v.AIR_FRICTION;
-	}
-	else if (ws.ground) {
-		ws.jumps = 0;
-		ws.playerVelocity.x *= v.GROUND_FRICTION;
-		if (abs(ws.playerVelocity.x) < 1)
-			ws.playerVelocity.x = 0;
-	}
 
 	if (ws.hookConnected) {
 		hookPull = calculateDirection(ws.player, ws.hookGoal);
@@ -435,22 +413,7 @@ void mutateWorldState(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 		else
 			speedVector.x += hookPull.x * ws.HOOKSTRENGHT;
 
-		/*
-		if (speedVector.x > 0 && speedVector.x > ws.appliedForce.x) {
-			ws.appliedForce.x += speedVector.x;
-		}		
-		if (speedVector.x < 0 && speedVector.x < ws.appliedForce.x) {
-			ws.appliedForce.x += speedVector.x;
-		}
-		if (speedVector.y > 0 && speedVector.y > ws.appliedForce.y) {
-			ws.appliedForce.y += speedVector.y;
-			ws.appliedForce.y += v.GRAVITY *-1;
-		}
-		if (speedVector.y < 0 && speedVector.y < ws.appliedForce.y) {
-			ws.appliedForce.y += speedVector.y;
-			ws.appliedForce.y += v.GRAVITY;
-		}*/
-		ws.appliedForce += speedVector;
+		ws.playerVelocity += speedVector;
 
 		// Allow upward movement when connected to the hook
 		/*if (speedVector.y < 0) {
@@ -462,7 +425,28 @@ void mutateWorldState(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 	}
 
 
+
 	ws.playerVelocity += ws.appliedForce;
+	if (ws.movement > 0) {
+		if (ws.playerVelocity.x < ws.movement)
+			ws.playerVelocity.x += ws.movement;
+	}
+	else if (ws.movement < 0) {
+		if (ws.playerVelocity.x > ws.movement)
+			ws.playerVelocity.x += ws.movement;
+	}	
+
+	if (ws.ground && !ws.hookConnected) {
+		ws.jumps = 0;
+		ws.playerVelocity.x *= v.GROUND_FRICTION;
+		if (abs(ws.playerVelocity.x) < 1)
+			ws.playerVelocity.x = 0;
+	}
+
+	if (!ws.ground && !ws.hookConnected) {
+		ws.playerVelocity.y += v.GRAVITY;
+		ws.playerVelocity.x *= v.AIR_FRICTION;
+	}
 	ws.playerVelocity.x = SDL_clamp(ws.playerVelocity.x, -v.MAXSPEED, v.MAXSPEED);
 	ws.playerVelocity.y = SDL_clamp(ws.playerVelocity.y, -v.MAXSPEED, v.MAXSPEED);
 
@@ -489,7 +473,7 @@ void mutateWorldState(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 		}
 	}
 
-	ws.player.x += ws.playerVelocity.x + ws.movement;
+	ws.player.x += ws.playerVelocity.x;
 	//ws.speedX -= ws.movement;
 	for (const auto& obstacle : obstacles) {
 		SDL_FRect obstacleRect = obstacle.rect;
