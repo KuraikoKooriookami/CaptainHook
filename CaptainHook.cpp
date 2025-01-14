@@ -478,13 +478,15 @@ void mutateWorldState(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 	for (const auto& obstacle : obstacles) {
 		SDL_FRect obstacleRect = obstacle.rect;
 		if (SDL_HasIntersectionF(&ws.player, &obstacleRect)) {
-			if (ws.playerVelocity.x+ws.movement > 0) {
+			if (ws.playerVelocity.x > 0) {
 				ws.player.x = obstacleRect.x - ws.player.w;
 				ws.playerVelocity.x = 0;
 			}
 			else {
-				ws.player.x = obstacleRect.x + obstacleRect.w;
-				ws.playerVelocity.x = 0;
+				if (ws.playerVelocity.x < 0){
+					ws.player.x = obstacleRect.x + obstacleRect.w;
+					ws.playerVelocity.x = 0;
+				}
 			}
 		}
 	}
