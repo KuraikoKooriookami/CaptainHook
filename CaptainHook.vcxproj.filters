@@ -53,11 +53,27 @@
     <Image Include="Images\winter_main.png">
       <Filter>Ressourcendateien</Filter>
     </Image>
-    <Image Include="Images\monkey.png">
+    <Image Include="x64\Debug\Images\desert_main.png">
+      <Filter>Ressourcendateien</Filter>
+    </Image>
+    <Image Include="x64\Debug\Images\generic_unhookable.png">
+      <Filter>Ressourcendateien</Filter>
+    </Image>
+    <Image Include="x64\Debug\Images\grass_main.png">
+      <Filter>Ressourcendateien</Filter>
+    </Image>
+    <Image Include="x64\Debug\Images\jungle_main.png">
+      <Filter>Ressourcendateien</Filter>
+    </Image>
+    <Image Include="x64\Debug\Images\jungle_unhookables.png">
+      <Filter>Ressourcendateien</Filter>
+    </Image>
+    <Image Include="x64\Debug\Images\winter_main.png">
       <Filter>Ressourcendateien</Filter>
     </Image>
   </ItemGroup>
   <ItemGroup>
     <Text Include="levels\map.txt" />
+    <Text Include="x64\Debug\levels\map.txt" />
   </ItemGroup>
 </Project>
