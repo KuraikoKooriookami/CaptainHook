@@ -316,11 +316,11 @@ void readEvents(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 	velocity v;
 	ws.appliedForce = { 0,0 };
 
-	if (state[SDL_SCANCODE_LEFT]) {
+	if (state[SDL_SCANCODE_A]) {
 		ws.movement = v.MOVEMENT * -1;
 	}
 	else {
-		if (state[SDL_SCANCODE_RIGHT]) {
+		if (state[SDL_SCANCODE_D]) {
 			ws.movement = v.MOVEMENT;
 		}
 		else {
@@ -335,7 +335,7 @@ void readEvents(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 	}*/
 
 	while (SDL_PollEvent(&event)){
-		if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_UP && ws.jumps < 2) {
+		if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_W && ws.jumps < 2) {
 			ws.jumps++;
 			ws.playerVelocity.y = v.JUMP * -1;
 			ws.ground = false;
