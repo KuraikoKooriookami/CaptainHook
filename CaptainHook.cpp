@@ -51,8 +51,6 @@ struct WorldState {
 	float HOOKSTRENGHT = 10;
 	float currentHookLength = 0;
 	double hookLength = 0;
-	double speedX = 0;
-	double speedY = 0;
 	bool ground = false;
 	int jumps = 0;
 	double movement = 0;
@@ -97,12 +95,9 @@ enum obstacleID { //UDLR = Directions, C = curved
 	DRC_EARTH,				//20
 	DLCORNER_EARTH, //21
 	DRCORNER_EARTH, //22
-	KIRBY2,
-	DUDE1,
-	DUDE2,
-	UNHOOKABLE,
-	URCLONGER_GRASS,
-	ULCLONGER_GRASS,
+	URCLONGER_GRASS, //23
+	ULCLONGER_GRASS, //24
+	UNHOOKABLE, //25
 
 };
 
@@ -397,8 +392,8 @@ void mutateWorldState(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 			}
 		}
 		if (!ws.hookConnected && abs(ws.hookPosition.x - ws.hookGoal.x) < 2 && abs(ws.hookPosition.y - ws.hookGoal.y) < 2) {
-			ws.hookNoObstacleFound = true;
-			ws.hookFlying = false;
+			//ws.hookNoObstacleFound = true;
+			//ws.hookFlying = false;
 		}
 	}
 
@@ -448,8 +443,11 @@ void mutateWorldState(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 	}
 
 	if (!ws.ground && !ws.hookConnected) {
-		ws.playerVelocity.y += v.GRAVITY;
+		//ws.playerVelocity.y += v.GRAVITY;
 		ws.playerVelocity.x *= v.AIR_FRICTION;
+	}
+	if (!ws.ground) {
+		ws.playerVelocity.y += v.GRAVITY;
 	}
 	ws.playerVelocity.x = SDL_clamp(ws.playerVelocity.x, -v.MAXSPEED, v.MAXSPEED);
 	ws.playerVelocity.y = SDL_clamp(ws.playerVelocity.y, -v.MAXSPEED, v.MAXSPEED);
