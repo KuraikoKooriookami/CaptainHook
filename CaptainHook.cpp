@@ -48,7 +48,7 @@ struct WorldState {
 	int amountOfHookTicks = 1;
 	float MAXHOOKLENGTH = 1000;
 	float HOOKFLYINGSPEED = 25;
-	float HOOKSTRENGHT = 10;
+	float HOOKSTRENGTH = 10;
 	float currentHookLength = 0;
 	double hookLength = 0;
 	bool ground = false;
@@ -401,16 +401,16 @@ void mutateWorldState(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 		hookPull = calculateDirection(ws.player, ws.hookGoal);
 		if (hookPull.y < 0) {
 			//stronger pull upwards
-			speedVector.y += hookPull.y * ws.HOOKSTRENGHT * 1.5;
+			speedVector.y += hookPull.y * ws.HOOKSTRENGTH * 1.5;
 		}
 		else
-			speedVector.y += hookPull.y * ws.HOOKSTRENGHT * 0.85;
+			speedVector.y += hookPull.y * ws.HOOKSTRENGTH * 0.85;
 		if (hookPull.x * ws.movement < 0) {
 			//dampen pull when moving in opposite direction
-			speedVector.x += hookPull.x * ws.HOOKSTRENGHT * 0.8;
+			speedVector.x += hookPull.x * ws.HOOKSTRENGTH * 0.8;
 		}
 		else
-			speedVector.x += hookPull.x * ws.HOOKSTRENGHT;
+			speedVector.x += hookPull.x * ws.HOOKSTRENGTH;
 
 		ws.playerVelocity += speedVector;
 
