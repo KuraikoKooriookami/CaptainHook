@@ -20,6 +20,11 @@ struct vector2 {
 		this->x += other.x;
 		this->y += other.y;
 		return *this;
+	}	
+	vector2& operator*=(const double other) {
+		this->x *= other;
+		this->y *= other;
+		return *this;
 	}
 };
 
@@ -47,28 +52,30 @@ struct WorldState {
 	bool hookNoObstacleFound = true;
 	int amountOfHookTicks = 1;
 	float MAXHOOKLENGTH = 1000;
-	float HOOKFLYINGSPEED = 25;
-	float HOOKSTRENGTH = 10;
+	float HOOKFLYINGSPEED = 35;
+	float HOOKSTRENGTH = 1.75;
 	float currentHookLength = 0;
 	double hookLength = 0;
 	bool ground = false;
 	int jumps = 0;
-	double movement = 0;
+	double maxMovement = 0;
 
 };
 
 struct {
 	float x;
 	float y;
-} camera = { 0, 0, };
+} 
+camera = { 0, 0, };
 
 struct velocity {
-	double MAXSPEED = 10;
-	double MOVEMENT = 7.5;
-	double AIR_FRICTION = 0.985;
-	double GROUND_FRICTION = 0.65;
-	double JUMP = 15;
+	double MAXSPEED = 20;
+	double GROUNDMOVEMENT = 7.5;
+	double AIRMOVEMENT = 4;
+	double JUMP = 12;
 	double GRAVITY = 0.5;
+	double SLIDING = 0.87;
+	double MOVEMENTACCELERATION = 0.5;
 };
 
 enum obstacleID { //UDLR = Directions, C = curved
@@ -310,16 +317,24 @@ void readEvents(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 	SDL_Event event;
 	velocity v;
 	ws.appliedForce = { 0,0 };
+	double movement = 0;
+
+	if (!ws.ground) {
+		movement = v.AIRMOVEMENT;
+	}
+	else {
+		movement = v.GROUNDMOVEMENT;
+	}
 
 	if (state[SDL_SCANCODE_A]) {
-		ws.movement = v.MOVEMENT * -1;
+		ws.maxMovement = movement * -1;
 	}
 	else {
 		if (state[SDL_SCANCODE_D]) {
-			ws.movement = v.MOVEMENT;
+			ws.maxMovement = movement;
 		}
 		else {
-			ws.movement = 0;
+			ws.maxMovement = 0;
 		}
 	}
 	/*if (ws.playerVelocity.x < ws.movement && ws.movement > 0) {
@@ -367,14 +382,14 @@ void handle_camera(WorldState& ws) {
 	}*/
 }
 
-void mutateWorldState(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
+void mutateWorldState(WorldState& ws, const vector<SDL_FRect_P>& obstacles, double deltaT) {
 	vector2 hookPull = { 0,0 };
 	vector2 speedVector = { 0,0 };
 	velocity v;	
 	if (ws.hookFlying && !ws.hookConnected && !ws.hookNoObstacleFound) {
 		vector2 direction = calculateDirection(ws.player, ws.hookGoal);
-		ws.hookPosition.x = ws.player.x + ws.player.w / 2 + (direction.x * ws.HOOKFLYINGSPEED * ws.amountOfHookTicks);
-		ws.hookPosition.y = ws.player.y + ws.player.h / 2 + (direction.y * ws.HOOKFLYINGSPEED * ws.amountOfHookTicks);
+		ws.hookPosition.x = ws.player.x + ws.player.w / 2 + (direction.x * ws.HOOKFLYINGSPEED * ws.amountOfHookTicks);// * deltaT;
+		ws.hookPosition.y = ws.player.y + ws.player.h / 2 + (direction.y * ws.HOOKFLYINGSPEED * ws.amountOfHookTicks);// * deltaT;
 		ws.amountOfHookTicks++;
 		SDL_FRect currentRect = { ws.hookPosition.x, ws.hookPosition.y, 1, 1 };
 		for (const auto& obstacle : obstacles) {
@@ -388,6 +403,10 @@ void mutateWorldState(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 				ws.hookConnected = true;
 				ws.hookFlying = false;
 				ws.hookGoal = ws.hookPosition;
+				if (ws.playerVelocity.y * direction.y > 0)
+					ws.playerVelocity.y = ws.playerVelocity.y * 0.5;
+				if (ws.playerVelocity.x * direction.x > 0)
+					ws.playerVelocity.x = ws.playerVelocity.x * 0.75;
 				break;
 			}
 		}
@@ -401,54 +420,54 @@ void mutateWorldState(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 		hookPull = calculateDirection(ws.player, ws.hookGoal);
 		if (hookPull.y < 0) {
 			//stronger pull upwards
-			speedVector.y += hookPull.y * ws.HOOKSTRENGTH * 1.5;
+			speedVector.y += hookPull.y * 1.25;
 		}
 		else
-			speedVector.y += hookPull.y * ws.HOOKSTRENGTH * 0.85;
-		if (hookPull.x * ws.movement < 0) {
+			speedVector.y += hookPull.y * 0.85;
+		if (hookPull.x * ws.maxMovement < 0) {
 			//dampen pull when moving in opposite direction
-			speedVector.x += hookPull.x * ws.HOOKSTRENGTH * 0.8;
+			speedVector.x += hookPull.x *0.77;
 		}
 		else
-			speedVector.x += hookPull.x * ws.HOOKSTRENGTH;
+			speedVector.x += hookPull.x *1.2;
+
+		speedVector.x *= ws.HOOKSTRENGTH;
 
 		ws.playerVelocity += speedVector;
+	}
 
-		// Allow upward movement when connected to the hook
-		/*if (speedVector.y < 0) {
-			ws.playerVelocity.y += speedVector.y - v.GRAVITY;
+	//right movement
+	if (ws.maxMovement > 0) {
+		if (ws.playerVelocity.x < ws.maxMovement) {
+			ws.playerVelocity.x += v.MOVEMENTACCELERATION;
+			if (ws.playerVelocity.x > ws.maxMovement)
+				ws.playerVelocity.x = ws.maxMovement;
 		}
-		else {
-			ws.playerVelocity.y += speedVector.y + v.GRAVITY;
-		}*/
+	}
+	//left movement
+	else if (ws.maxMovement < 0) {
+		if (ws.playerVelocity.x > ws.maxMovement) {
+			ws.playerVelocity.x += v.MOVEMENTACCELERATION * -1;
+			if (ws.playerVelocity.x < ws.maxMovement)
+				ws.playerVelocity.x = ws.maxMovement;
+		}
+	}
+	else {
+		if (!ws.hookConnected) {
+			ws.playerVelocity.x *= v.SLIDING;
+			if (abs(ws.playerVelocity.x) < 1)
+				ws.playerVelocity.x = 0;
+		}
 	}
 
-
-
-	ws.playerVelocity += ws.appliedForce;
-	if (ws.movement > 0) {
-		if (ws.playerVelocity.x < ws.movement)
-			ws.playerVelocity.x += ws.movement;
-	}
-	else if (ws.movement < 0) {
-		if (ws.playerVelocity.x > ws.movement)
-			ws.playerVelocity.x += ws.movement;
-	}	
-
-	if (ws.ground && !ws.hookConnected) {
+	if (ws.ground) {
 		ws.jumps = 0;
-		ws.playerVelocity.x *= v.GROUND_FRICTION;
-		if (abs(ws.playerVelocity.x) < 1)
-			ws.playerVelocity.x = 0;
-	}
-
-	if (!ws.ground && !ws.hookConnected) {
-		//ws.playerVelocity.y += v.GRAVITY;
-		ws.playerVelocity.x *= v.AIR_FRICTION;
+		//ws.playerVelocity.x *= v.GROUND_FRICTION;
 	}
 	if (!ws.ground) {
 		ws.playerVelocity.y += v.GRAVITY;
 	}
+
 	ws.playerVelocity.x = SDL_clamp(ws.playerVelocity.x, -v.MAXSPEED, v.MAXSPEED);
 	ws.playerVelocity.y = SDL_clamp(ws.playerVelocity.y, -v.MAXSPEED, v.MAXSPEED);
 
@@ -564,18 +583,17 @@ int main(int argc, char* args[])
 	WorldState worldState;
 	initSpriteSheet(worldState);
 	initWorldState(worldState);
-	 //obstacles = {
-		//{0, 550, 1050, TILESIZE}, // Example ground object
-		//{200, 400, 100, TILESIZE}, // Example obstacle
-		//{400, 300, 350, TILESIZE},  // Another example obstacle
-		//{850, 200, TILESIZE, 300},  // Wall example obstacle
-		//{750, 850, 1050, TILESIZE }, // Example ground object
-		//{1500, 650, TILESIZE, TILESIZE }, // Example ground object
-	//};
+	Uint64 NOW = SDL_GetPerformanceCounter();
+	Uint64 LAST = 0;
+	double deltaT = 0;
 
 	while (true) {
+		LAST = NOW;
+		NOW = SDL_GetPerformanceCounter();
+
+		deltaT = (double)((NOW - LAST) * 1000 / (double)SDL_GetPerformanceFrequency());
 		readEvents(worldState, obstacles);
-		mutateWorldState(worldState, obstacles);
+		mutateWorldState(worldState, obstacles, deltaT);
 		handle_camera(worldState);
 		renderGraphics(worldState, obstacles);
 	}
