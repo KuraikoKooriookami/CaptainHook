@@ -337,12 +337,13 @@ void readEvents(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 			ws.maxMovement = 0;
 		}
 	}
-	/*if (ws.playerVelocity.x < ws.movement && ws.movement > 0) {
-		ws.playerVelocity.x = ws.movement;
+
+	if (state[SDL_SCANCODE_LCTRL] && state[SDL_SCANCODE_C]) {
+		SDL_DestroyWindow(ws.window);
+		SDL_DestroyRenderer(ws.renderer);
+		SDL_Quit();
+		exit(0);
 	}
-	if (ws.playerVelocity.x > ws.movement && ws.movement < 0) {
-		ws.playerVelocity.x = ws.movement;
-	}*/
 
 	while (SDL_PollEvent(&event)){
 		if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_W && ws.jumps < 2) {
