@@ -39,6 +39,8 @@ struct WorldState {
 	SDL_Surface* image;
 	SDL_Texture* texture;
 	SDL_Texture* texture2;
+	SDL_Texture* hookTexture;
+	SDL_Texture* linkTexture;
 	SDL_Texture* playerTexture;
 	SDL_FRect player = { 2*TILESIZE, 2*TILESIZE, TILESIZE, TILESIZE };
 	SDL_FPoint hookGoal = { 0, 0 };
@@ -274,9 +276,13 @@ void initWorldState(WorldState& ws) {
 	string texturePath = basePath + "/Images/grass_main.png";
 	string texturePath2 = basePath + "/Images/generic_unhookable.png";
 	string texturePath3 = basePath + "/Images/monkey.png";
+	string texturePathHook = basePath + "/Images/hook.png";
+	string texturePathChain = basePath + "/Images/link.png";
 	ws.texture = IMG_LoadTexture(ws.renderer, texturePath.c_str());
 	ws.texture2 = IMG_LoadTexture(ws.renderer, texturePath2.c_str());
 	ws.playerTexture = IMG_LoadTexture(ws.renderer, texturePath3.c_str());
+	ws.hookTexture = IMG_LoadTexture(ws.renderer, texturePathHook.c_str());
+	ws.linkTexture = IMG_LoadTexture(ws.renderer, texturePathChain.c_str());
 
 
 	SDL_Init(SDL_INIT_EVERYTHING);
@@ -531,8 +537,22 @@ void renderGraphics(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 	SDL_SetRenderDrawColor(ws.renderer, 0, 0, 0, 255);
 	SDL_RenderClear(ws.renderer);
 	if (ws.hookFlying || ws.hookConnected || !ws.hookNoObstacleFound) {
-		SDL_SetRenderDrawColor(ws.renderer, 0, 255, 0, 255);
-		SDL_RenderDrawLine(ws.renderer, ws.player.x - camera.x + ws.player.w / 2, ws.player.y - camera.y + ws.player.h / 2, ws.hookPosition.x - camera.x, ws.hookPosition.y - camera.y);
+		
+		float hookLength = sqrt(pow(ws.hookPosition.x - ws.player.x + ws.player.w / 2, 2) + pow(ws.hookPosition.y - ws.player.y + ws.player.h / 2, 2));
+		float angle = atan2(ws.hookGoal.y - ws.player.y, ws.hookGoal.x - ws.player.x) * 180 / M_PI;
+		//add links between player and hook
+		for (float i = hookLength; i > 0; i -= TILESIZE/2) {
+			if (i == hookLength){
+				SDL_Rect hookRect = { ws.player.x + ws.player.w / 4 + (ws.hookPosition.x - ws.player.x) * i / hookLength - camera.x, ws.player.y + ws.player.h / 4 + (ws.hookPosition.y - ws.player.y) * i / hookLength - camera.y, TILESIZE / 2, TILESIZE / 2 };
+				SDL_RenderCopyEx(ws.renderer, ws.hookTexture, &ws.spriteSheet[0][0], &hookRect, angle + 90, NULL, SDL_FLIP_NONE);
+			}
+			else {
+				SDL_Rect linkRect = { ws.player.x + ws.player.w / 4 + (ws.hookPosition.x - ws.player.x) * i / hookLength - camera.x, ws.player.y + ws.player.h / 4 + (ws.hookPosition.y - ws.player.y) * i / hookLength - camera.y, TILESIZE / 2, TILESIZE / 2 };
+				SDL_RenderCopyEx(ws.renderer, ws.linkTexture, &ws.spriteSheet[0][0], &linkRect, angle + 90, NULL, SDL_FLIP_NONE);
+			}
+		}		
+		//rotate image by 90 degree
+
 	}
 
 	SDL_SetRenderDrawColor(ws.renderer, 255, 0, 0, 255);
@@ -548,6 +568,8 @@ void renderGraphics(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 	//		//SDL_RenderFillRectF(ws.renderer, &rect);
 	//	}
 	//}
+
+
 
 	int mapHeight = ws.map.size();
 	int i = 0;
@@ -571,7 +593,6 @@ void renderGraphics(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 	}
 
 
-	SDL_SetRenderDrawColor(ws.renderer, 0, 0, 255, 255);
 	SDL_Rect playerRect = { ws.player.x - camera.x, ws.player.y - camera.y, ws.player.w, ws.player.h };
 	SDL_Rect monkey = { 0, 0, 256, 256 };
 	SDL_RenderCopy(ws.renderer, ws.playerTexture, &monkey, &playerRect);
