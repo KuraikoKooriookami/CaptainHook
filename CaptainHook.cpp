@@ -59,7 +59,7 @@ struct WorldState {
 	float currentHookLength = 0;
 	double hookLength = 0;
 	bool ground = false;
-	int jumps = 0;
+	bool canJump = true;
 	double maxMovement = 0;
 
 };
@@ -352,10 +352,17 @@ void readEvents(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 	}
 
 	while (SDL_PollEvent(&event)){
-		if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_W && ws.jumps < 2) {
-			ws.jumps++;
+		if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_W && ws.canJump) {
+			if (!ws.ground) {
+				ws.canJump = false;
+				ws.ground = false;
+				cout << "DOUBLE JUMPED" << endl;
+			}
+			else {
+				ws.ground = false;
+				cout << "JUMPED" << endl;
+			}
 			ws.playerVelocity.y = v.JUMP * -1;
-			ws.ground = false;
 		}
 		if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_RIGHT) 
 		{
@@ -467,22 +474,12 @@ void mutateWorldState(WorldState& ws, const vector<SDL_FRect_P>& obstacles, doub
 		}
 	}
 
-	if (ws.ground) {
-		ws.jumps = 0;
-		//ws.playerVelocity.x *= v.GROUND_FRICTION;
-	}
-	if (!ws.ground) {
-		ws.playerVelocity.y += v.GRAVITY;
-	}
+
+	ws.playerVelocity.y += v.GRAVITY;
 
 	ws.playerVelocity.x = SDL_clamp(ws.playerVelocity.x, -v.MAXSPEED, v.MAXSPEED);
 	ws.playerVelocity.y = SDL_clamp(ws.playerVelocity.y, -v.MAXSPEED, v.MAXSPEED);
 
-
-	ws.ground = false;
-	/*if (ws.playerVelocity.x < 1 && ws.playerVelocity.x > -1) {
-		ws.playerVelocity.x = 0;
-	}*/
 	ws.player.y += ws.playerVelocity.y;
 
 	for (const auto& obstacle : obstacles) {
@@ -491,6 +488,7 @@ void mutateWorldState(WorldState& ws, const vector<SDL_FRect_P>& obstacles, doub
 			if (ws.playerVelocity.y > 0) {
 				ws.player.y = obstacleRect.y - ws.player.h;
 				ws.ground = true;
+				ws.canJump = true;
 				ws.playerVelocity.y = 0;
 			}
 			else {
@@ -502,7 +500,6 @@ void mutateWorldState(WorldState& ws, const vector<SDL_FRect_P>& obstacles, doub
 	}
 
 	ws.player.x += ws.playerVelocity.x;
-	//ws.speedX -= ws.movement;
 	for (const auto& obstacle : obstacles) {
 		SDL_FRect obstacleRect = obstacle.rect;
 		if (SDL_HasIntersectionF(&ws.player, &obstacleRect)) {
