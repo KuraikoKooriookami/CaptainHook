@@ -53,11 +53,9 @@ struct WorldState {
 	bool hookConnected = false;
 	bool hookNoObstacleFound = true;
 	int amountOfHookTicks = 1;
-	float MAXHOOKLENGTH = 1000;
+	float MAXHOOKLENGTH = 350;
 	float HOOKFLYINGSPEED = 35;
 	float HOOKSTRENGTH = 1.75;
-	float currentHookLength = 0;
-	double hookLength = 0;
 	bool ground = false;
 	bool canJump = true;
 	double maxMovement = 0;
@@ -406,27 +404,31 @@ void mutateWorldState(WorldState& ws, const vector<SDL_FRect_P>& obstacles, doub
 		ws.hookPosition.y = ws.player.y + ws.player.h / 2 + (direction.y * ws.HOOKFLYINGSPEED * ws.amountOfHookTicks);// * deltaT;
 		ws.amountOfHookTicks++;
 		SDL_FRect currentRect = { ws.hookPosition.x, ws.hookPosition.y, 1, 1 };
-		for (const auto& obstacle : obstacles) {
-			SDL_FRect obstacleRect = obstacle.rect;
-			if (SDL_HasIntersectionF(&currentRect, &obstacleRect)) {
-				if (obstacle.obstacleValue == UNHOOKABLE) {
-					ws.hookNoObstacleFound = true;
+		//calculate hook length
+		double hookLength = sqrt(pow(ws.hookPosition.x - ws.player.x + ws.player.w / 2, 2) + pow(ws.hookPosition.y - ws.player.y + ws.player.h / 2, 2));
+		if (hookLength > ws.MAXHOOKLENGTH) {
+			ws.hookFlying = false;
+			ws.hookNoObstacleFound = true;
+		}
+		else {
+			for (const auto& obstacle : obstacles) {
+				SDL_FRect obstacleRect = obstacle.rect;
+				if (SDL_HasIntersectionF(&currentRect, &obstacleRect)) {
+					if (obstacle.obstacleValue == UNHOOKABLE) {
+						ws.hookNoObstacleFound = true;
+						ws.hookFlying = false;
+						break;
+					}
+					ws.hookConnected = true;
 					ws.hookFlying = false;
+					ws.hookGoal = ws.hookPosition;
+					if (ws.playerVelocity.y * direction.y > 0)
+						ws.playerVelocity.y = ws.playerVelocity.y * 0.5;
+					if (ws.playerVelocity.x * direction.x > 0)
+						ws.playerVelocity.x = ws.playerVelocity.x * 0.75;
 					break;
 				}
-				ws.hookConnected = true;
-				ws.hookFlying = false;
-				ws.hookGoal = ws.hookPosition;
-				if (ws.playerVelocity.y * direction.y > 0)
-					ws.playerVelocity.y = ws.playerVelocity.y * 0.5;
-				if (ws.playerVelocity.x * direction.x > 0)
-					ws.playerVelocity.x = ws.playerVelocity.x * 0.75;
-				break;
 			}
-		}
-		if (!ws.hookConnected && abs(ws.hookPosition.x - ws.hookGoal.x) < 2 && abs(ws.hookPosition.y - ws.hookGoal.y) < 2) {
-			//ws.hookNoObstacleFound = true;
-			//ws.hookFlying = false;
 		}
 	}
 
@@ -537,7 +539,6 @@ void renderGraphics(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 		
 		float hookLength = sqrt(pow(ws.hookPosition.x - ws.player.x + ws.player.w / 2, 2) + pow(ws.hookPosition.y - ws.player.y + ws.player.h / 2, 2));
 		float angle = atan2(ws.hookGoal.y - ws.player.y, ws.hookGoal.x - ws.player.x) * 180 / M_PI;
-		//add links between player and hook
 		for (float i = hookLength; i > 0; i -= TILESIZE/2) {
 			if (i == hookLength){
 				SDL_Rect hookRect = { ws.player.x + ws.player.w / 4 + (ws.hookPosition.x - ws.player.x) * i / hookLength - camera.x, ws.player.y + ws.player.h / 4 + (ws.hookPosition.y - ws.player.y) * i / hookLength - camera.y, TILESIZE / 2, TILESIZE / 2 };
@@ -548,8 +549,6 @@ void renderGraphics(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 				SDL_RenderCopyEx(ws.renderer, ws.linkTexture, &ws.spriteSheet[0][0], &linkRect, angle + 90, NULL, SDL_FLIP_NONE);
 			}
 		}		
-		//rotate image by 90 degree
-
 	}
 
 	SDL_SetRenderDrawColor(ws.renderer, 255, 0, 0, 255);
