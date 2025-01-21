@@ -138,11 +138,14 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="Images\desert_main.png" />
+    <Image Include="Images\finish_flag.png" />
+    <Image Include="Images\finish_rod.png" />
     <Image Include="Images\generic_unhookable.png" />
     <Image Include="Images\grass_main.png" />
     <Image Include="Images\jungle_main.png" />
     <Image Include="Images\jungle_unhookables.png" />
     <Image Include="Images\monkey.png" />
+    <Image Include="Images\spikeball.png" />
     <Image Include="Images\winter_main.png" />
     <Image Include="x64\Debug\Images\desert_main.png" />
     <Image Include="x64\Debug\Images\generic_unhookable.png" />

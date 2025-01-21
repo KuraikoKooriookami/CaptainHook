@@ -71,6 +71,18 @@
     <Image Include="x64\Debug\Images\winter_main.png">
       <Filter>Ressourcendateien</Filter>
     </Image>
+    <Image Include="Images\monkey.png">
+      <Filter>Ressourcendateien</Filter>
+    </Image>
+    <Image Include="Images\finish_flag.png">
+      <Filter>Ressourcendateien</Filter>
+    </Image>
+    <Image Include="Images\finish_rod.png">
+      <Filter>Ressourcendateien</Filter>
+    </Image>
+    <Image Include="Images\spikeball.png">
+      <Filter>Ressourcendateien</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <Text Include="levels\map.txt" />

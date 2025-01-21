@@ -41,8 +41,11 @@ struct WorldState {
 	SDL_Texture* texture2;
 	SDL_Texture* hookTexture;
 	SDL_Texture* linkTexture;
+	SDL_Texture* rodTexture;
+	SDL_Texture* flagTexture;
+	SDL_Texture* spikeTexture;
 	SDL_Texture* playerTexture;
-	SDL_FRect player = { 2*TILESIZE, 2*TILESIZE, TILESIZE, TILESIZE };
+	SDL_FRect player = { 0*TILESIZE, 0*TILESIZE, TILESIZE, TILESIZE };
 	SDL_FPoint hookGoal = { 0, 0 };
 	SDL_FPoint hookPosition = { 0, 0 };
 	SDL_Rect spriteSheet[16][12] = { 0, 0, TILESIZE , TILESIZE };
@@ -52,6 +55,7 @@ struct WorldState {
 	bool hookFlying = false;
 	bool hookConnected = false;
 	bool hookNoObstacleFound = true;
+	bool respawn = false;
 	int amountOfHookTicks = 1;
 	float MAXHOOKLENGTH = 350;
 	float HOOKFLYINGSPEED = 35;
@@ -61,6 +65,12 @@ struct WorldState {
 	double maxMovement = 0;
 
 };
+
+struct {
+	int x;
+	int y;
+}
+	spawnLocation;
 
 struct {
 	float x;
@@ -104,8 +114,11 @@ enum obstacleID { //UDLR = Directions, C = curved
 	DRCORNER_EARTH, //22
 	URCLONGER_GRASS, //23
 	ULCLONGER_GRASS, //24
-	UNHOOKABLE, //25
-
+	UNHOOKABLE = 80,
+	PLAYER_SPAWN = 90,
+	FINISH_ROD = 91,
+	FINISH_FLAG = 92,
+	SPIKEBALL = 93,
 };
 
 vector<SDL_FRect_P> obstacles;
@@ -165,11 +178,15 @@ void drawObstacle(const WorldState& ws, SDL_FRect destRect,int obstacleValue)
 		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[0][2], &destRect);    break;
 	case (URCLONGER_GRASS):
 		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[1][2], &destRect);    break;
-
 	case (UNHOOKABLE):
 		SDL_RenderCopyF(ws.renderer, ws.texture2, &ws.spriteSheet[0][1], &destRect);	break;
+	case (FINISH_ROD):
+		SDL_RenderCopyF(ws.renderer, ws.rodTexture, &ws.spriteSheet[0][0], &destRect); break;
+	case(FINISH_FLAG):
+		SDL_RenderCopyF(ws.renderer, ws.flagTexture, &ws.spriteSheet[0][0], &destRect); break;
+	case(SPIKEBALL):
+		SDL_RenderCopyF(ws.renderer, ws.spikeTexture, &ws.spriteSheet[0][0], &destRect); break;
 	default:
-		printf("Unknown object\n");
 		break;
 	}
 
@@ -244,6 +261,14 @@ void loadLevelAndDraw(WorldState& ws, vector<SDL_FRect_P>& obstacles)
 		for (int col = 0; col < ws.map[row].size(); col++){
 			int value = ws.map[row][col];
 
+			if (ws.map[row][col] == 90) {
+				spawnLocation.x = col * TILESIZE;
+				spawnLocation.y = row * TILESIZE;
+				ws.player.x = spawnLocation.x;
+				ws.player.y = spawnLocation.y;
+				continue;
+			}
+
 			if (value > 0) {
 				SDL_FRect_P rect_p = {
 					{
@@ -264,6 +289,13 @@ void loadLevelAndDraw(WorldState& ws, vector<SDL_FRect_P>& obstacles)
 	}
 }
 
+void resetPlayer(WorldState& ws) {
+	ws.playerVelocity.x = 0;
+	ws.playerVelocity.y = 0;
+	ws.player.x = spawnLocation.x;
+	ws.player.y = spawnLocation.y;
+	ws.respawn = false;
+}
 
 void initWorldState(WorldState& ws) {
 	ws.window = SDL_CreateWindow("Captain Hook", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
@@ -274,13 +306,19 @@ void initWorldState(WorldState& ws) {
 	string texturePath = basePath + "/Images/grass_main.png";
 	string texturePath2 = basePath + "/Images/generic_unhookable.png";
 	string texturePath3 = basePath + "/Images/monkey.png";
+	string texturePathRod = basePath + "/Images/finish_rod.png";
+	string texturePathFlag = basePath + "/Images/finish_flag.png";
 	string texturePathHook = basePath + "/Images/hook.png";
 	string texturePathChain = basePath + "/Images/link.png";
+	string texturePathSpike = basePath + "/Images/spikeball.png";
 	ws.texture = IMG_LoadTexture(ws.renderer, texturePath.c_str());
 	ws.texture2 = IMG_LoadTexture(ws.renderer, texturePath2.c_str());
 	ws.playerTexture = IMG_LoadTexture(ws.renderer, texturePath3.c_str());
 	ws.hookTexture = IMG_LoadTexture(ws.renderer, texturePathHook.c_str());
 	ws.linkTexture = IMG_LoadTexture(ws.renderer, texturePathChain.c_str());
+	ws.rodTexture = IMG_LoadTexture(ws.renderer, texturePathRod.c_str());
+	ws.flagTexture = IMG_LoadTexture(ws.renderer, texturePathFlag.c_str());
+	ws.spikeTexture = IMG_LoadTexture(ws.renderer, texturePathSpike.c_str());
 
 
 	SDL_Init(SDL_INIT_EVERYTHING);
@@ -349,6 +387,10 @@ void readEvents(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 		exit(0);
 	}
 
+	if (state[SDL_SCANCODE_LCTRL] && state[SDL_SCANCODE_D]) {
+		resetPlayer(ws);
+	}
+
 	while (SDL_PollEvent(&event)){
 		if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_W && ws.canJump) {
 			if (!ws.ground) {
@@ -414,7 +456,7 @@ void mutateWorldState(WorldState& ws, const vector<SDL_FRect_P>& obstacles, doub
 			for (const auto& obstacle : obstacles) {
 				SDL_FRect obstacleRect = obstacle.rect;
 				if (SDL_HasIntersectionF(&currentRect, &obstacleRect)) {
-					if (obstacle.obstacleValue == UNHOOKABLE) {
+					if (obstacle.obstacleValue == UNHOOKABLE || obstacle.obstacleValue == SPIKEBALL) {
 						ws.hookNoObstacleFound = true;
 						ws.hookFlying = false;
 						break;
@@ -498,6 +540,9 @@ void mutateWorldState(WorldState& ws, const vector<SDL_FRect_P>& obstacles, doub
 				ws.ground = false;
 				ws.playerVelocity.y = 0;
 			}
+			if (obstacle.obstacleValue >= 91){
+				ws.respawn = true;
+			}
 		}
 	}
 
@@ -515,7 +560,14 @@ void mutateWorldState(WorldState& ws, const vector<SDL_FRect_P>& obstacles, doub
 					ws.playerVelocity.x = 0;
 				}
 			}
+			if (obstacle.obstacleValue >= 91) {
+				ws.respawn = true;
+			}
 		}
+	}
+
+	if (ws.respawn == true) {
+		resetPlayer(ws);
 	}
 }
 
@@ -533,7 +585,7 @@ void initSpriteSheet(WorldState& ws) {
 }
 
 void renderGraphics(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
-	SDL_SetRenderDrawColor(ws.renderer, 0, 0, 0, 255);
+	SDL_SetRenderDrawColor(ws.renderer, 89, 181, 226, 0);
 	SDL_RenderClear(ws.renderer);
 	if (ws.hookFlying || ws.hookConnected || !ws.hookNoObstacleFound) {
 		
@@ -573,7 +625,7 @@ void renderGraphics(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 		int mapWidth = ws.map[row].size();
 		for (int col = 0; col < mapWidth; col++) {
 			int tileValue = ws.map[row][col];
-			if (tileValue > 0) {
+			if (tileValue > 0 && tileValue != 90) {
 				SDL_FRect_P rect_p = obstacles[i];
 				i++;
 
@@ -604,6 +656,7 @@ int main(int argc, char* args[])
 	Uint64 NOW = SDL_GetPerformanceCounter();
 	Uint64 LAST = 0;
 	double deltaT = 0;
+
 
 	while (true) {
 		LAST = NOW;
