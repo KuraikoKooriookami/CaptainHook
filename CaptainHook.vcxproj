@@ -118,6 +118,8 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)imgui
+\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -155,7 +157,8 @@
     <Image Include="x64\Debug\Images\winter_main.png" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="levels\map.txt" />
+    <Text Include="levels\map1.txt" />
+    <Text Include="levels\map2.txt" />
     <Text Include="x64\Debug\levels\map.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

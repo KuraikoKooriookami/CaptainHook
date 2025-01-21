@@ -50,6 +50,7 @@ struct WorldState {
 	SDL_FPoint hookPosition = { 0, 0 };
 	SDL_Rect spriteSheet[16][12] = { 0, 0, TILESIZE , TILESIZE };
 	vector<vector<int>>  map;
+	int stage = 1;
 	vector2 playerVelocity = { 0, 0 };
 	vector2 appliedForce = { 0, 0 };
 	bool hookFlying = false;
@@ -295,10 +296,13 @@ void resetPlayer(WorldState& ws) {
 	ws.player.x = spawnLocation.x;
 	ws.player.y = spawnLocation.y;
 	ws.respawn = false;
+	ws.hookConnected = false;
+	ws.hookNoObstacleFound = true;
+	ws.hookFlying = false;
 }
 
 void initWorldState(WorldState& ws) {
-	ws.window = SDL_CreateWindow("Captain Hook", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+	ws.window = SDL_CreateWindow("Captain Hook", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
 	ws.renderer = SDL_CreateRenderer(ws.window, -1, SDL_RENDERER_PRESENTVSYNC);
 
 	string basePath = SDL_GetBasePath();
@@ -339,7 +343,7 @@ void initWorldState(WorldState& ws) {
 		printf("Keine Texture gefunden");
 		exit(0);
 	}
-	string file = string(basePath)+"/levels/map.txt";
+	string file = string(basePath) + "/levels/map" + to_string(ws.stage) + ".txt";
 	getMap(ws, file);
 	loadLevelAndDraw(ws, obstacles);
 }
@@ -436,7 +440,7 @@ void handle_camera(WorldState& ws) {
 	}*/
 }
 
-void mutateWorldState(WorldState& ws, const vector<SDL_FRect_P>& obstacles, double deltaT) {
+void mutateWorldState(WorldState& ws,  vector<SDL_FRect_P>& obstacles, double deltaT) {
 	vector2 hookPull = { 0,0 };
 	vector2 speedVector = { 0,0 };
 	velocity v;	
@@ -541,7 +545,16 @@ void mutateWorldState(WorldState& ws, const vector<SDL_FRect_P>& obstacles, doub
 				ws.playerVelocity.y = 0;
 			}
 			if (obstacle.obstacleValue >= 91){
-				ws.respawn = true;
+				if (obstacle.obstacleValue == FINISH_FLAG || obstacle.obstacleValue == FINISH_ROD) {
+					ws.stage++;
+					string basePath = SDL_GetBasePath();
+					basePath = basePath + "../../";
+					string file = string(basePath) + "/levels/map" + to_string(ws.stage) + ".txt";
+					getMap(ws, file);
+					loadLevelAndDraw(ws, obstacles);
+				}
+				resetPlayer(ws);
+				break;
 			}
 		}
 	}
@@ -561,14 +574,25 @@ void mutateWorldState(WorldState& ws, const vector<SDL_FRect_P>& obstacles, doub
 				}
 			}
 			if (obstacle.obstacleValue >= 91) {
-				ws.respawn = true;
+				if (obstacle.obstacleValue == FINISH_FLAG || obstacle.obstacleValue == FINISH_ROD) {
+					ws.stage++;
+					string basePath = SDL_GetBasePath();
+					basePath = basePath + "../../";
+					string file = string(basePath) + "/levels/map" + to_string(ws.stage) + ".txt";
+					getMap(ws, file);
+					loadLevelAndDraw(ws, obstacles);
+				}
+				resetPlayer(ws);
+				break;
 			}
 		}
 	}
 
+	/*string file = string(basePath) + "/levels/map.txt";
 	if (ws.respawn == true) {
 		resetPlayer(ws);
 	}
+	getMap(ws, file);*/
 }
 
 void initSpriteSheet(WorldState& ws) {

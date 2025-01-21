@@ -85,7 +85,8 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="levels\map.txt" />
     <Text Include="x64\Debug\levels\map.txt" />
+    <Text Include="levels\map1.txt" />
+    <Text Include="levels\map2.txt" />
   </ItemGroup>
 </Project>
