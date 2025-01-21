@@ -83,6 +83,9 @@
     <Image Include="Images\spikeball.png">
       <Filter>Ressourcendateien</Filter>
     </Image>
+    <Image Include="Images\SpriteSheet.png">
+      <Filter>Ressourcendateien</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <Text Include="x64\Debug\levels\map.txt" />

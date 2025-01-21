@@ -148,6 +148,7 @@
     <Image Include="Images\jungle_unhookables.png" />
     <Image Include="Images\monkey.png" />
     <Image Include="Images\spikeball.png" />
+    <Image Include="Images\SpriteSheet.png" />
     <Image Include="Images\winter_main.png" />
     <Image Include="x64\Debug\Images\desert_main.png" />
     <Image Include="x64\Debug\Images\generic_unhookable.png" />
