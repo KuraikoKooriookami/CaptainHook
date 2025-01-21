@@ -549,7 +549,7 @@ void mutateWorldState(WorldState& ws,  vector<SDL_FRect_P>& obstacles, double de
 				ws.ground = false;
 				ws.playerVelocity.y = 0;
 			}
-			if (obstacle.obstacleValue >= 91){
+			if (obstacle.obstacleValue >= 43){
 				if (obstacle.obstacleValue == FINISH_FLAG || obstacle.obstacleValue == FINISH_ROD) {
 					ws.stage++;
 					string basePath = SDL_GetBasePath();
@@ -579,7 +579,7 @@ void mutateWorldState(WorldState& ws,  vector<SDL_FRect_P>& obstacles, double de
 					ws.playerVelocity.x = 0;
 				}
 			}
-			if (obstacle.obstacleValue >= 91 || obstacle.obstacleValue == SPIKEBALL) {
+			if (obstacle.obstacleValue >= 43 || obstacle.obstacleValue == SPIKEBALL) {
 				if (obstacle.obstacleValue == FINISH_FLAG || obstacle.obstacleValue == FINISH_ROD) {
 					ws.stage++;
 					string basePath = SDL_GetBasePath();
