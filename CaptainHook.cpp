@@ -480,6 +480,9 @@ void mutateWorldState(WorldState& ws,  vector<SDL_FRect_P>& obstacles, double de
 						ws.hookFlying = false;
 						break;
 					}
+					if (obstacle.obstacleValue >= 28) {
+						continue;
+					}
 					ws.hookConnected = true;
 					ws.hookFlying = false;
 					ws.hookGoal = ws.hookPosition;
@@ -564,7 +567,7 @@ void mutateWorldState(WorldState& ws,  vector<SDL_FRect_P>& obstacles, double de
 				ws.ground = false;
 				ws.playerVelocity.y = 0;
 			}
-			if (obstacle.obstacleValue >= 43 || obstacle.obstacleValue == SPIKEBALL){
+			if (obstacle.obstacleValue >= 43 || obstacle.obstacleValue == SPIKEBALL || (obstacle.obstacleValue >= 28 && obstacle.obstacleValue <= 38)){
 				if (obstacle.obstacleValue == FINISH_FLAG || obstacle.obstacleValue == FINISH_ROD) {
 					ws.stage++;
 					string basePath = SDL_GetBasePath();
@@ -594,7 +597,7 @@ void mutateWorldState(WorldState& ws,  vector<SDL_FRect_P>& obstacles, double de
 					ws.playerVelocity.x = 0;
 				}
 			}
-			if (obstacle.obstacleValue >= 43 || obstacle.obstacleValue == SPIKEBALL) {
+			if (obstacle.obstacleValue >= 43 || obstacle.obstacleValue == SPIKEBALL || (obstacle.obstacleValue >= 28 && obstacle.obstacleValue <= 38)) {
 				if (obstacle.obstacleValue == FINISH_FLAG || obstacle.obstacleValue == FINISH_ROD) {
 					ws.stage++;
 					string basePath = SDL_GetBasePath();
@@ -703,16 +706,20 @@ void renderGraphics(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 		SDL_RenderCopyF(ws.renderer, Message, NULL, &Message_rect);
 		surfaceMessage = TTF_RenderText_Solid(ws.font, "Press 'W' while in Air", Black);
 		Message = SDL_CreateTextureFromSurface(ws.renderer, surfaceMessage);
-		Message_rect = { 1150 - camera.x, 1150 - camera.y, 300, 50 };
+		Message_rect = { 1475 - camera.x, 1150 - camera.y, 300, 50 };
 		SDL_RenderCopyF(ws.renderer, Message, NULL, &Message_rect);
 		surfaceMessage = TTF_RenderText_Solid(ws.font, "Rightclick to Hook", Black);
 		Message = SDL_CreateTextureFromSurface(ws.renderer, surfaceMessage);
-		Message_rect = {  1150 - camera.x, 850 - camera.y, 300, 50 };
+		Message_rect = {  1200 - camera.x, 850 - camera.y, 300, 50 };
 		SDL_RenderCopyF(ws.renderer, Message, NULL, &Message_rect);
-		/*SDL_Surface* surfaceMessage = TTF_RenderText_Solid(ws.font, "Press 'A' or 'D' to Walk", Black);
-		SDL_Texture* Message = SDL_CreateTextureFromSurface(ws.renderer, surfaceMessage);
-		SDL_Rect Message_rect = { 200 - camera.x, 1150 - camera.y, 300, 50 };
-		SDL_RenderCopy(ws.renderer, Message, NULL, &Message_rect);*/
+		surfaceMessage = TTF_RenderText_Solid(ws.font, "You cant Hook Iron Objects", Black);
+		Message = SDL_CreateTextureFromSurface(ws.renderer, surfaceMessage);
+		Message_rect = { 875 - camera.x, 600 - camera.y, 300, 50 };
+		SDL_RenderCopyF(ws.renderer, Message, NULL, &Message_rect);
+		surfaceMessage = TTF_RenderText_Solid(ws.font, "You can Hook Through here", Black);
+		Message = SDL_CreateTextureFromSurface(ws.renderer, surfaceMessage);
+		Message_rect = { 1475 - camera.x, 600 - camera.y, 300, 50 };
+		SDL_RenderCopyF(ws.renderer, Message, NULL, &Message_rect);
 	}
 
 	SDL_Rect playerRect = { ws.player.x - camera.x, ws.player.y - camera.y, ws.player.w, ws.player.h };
