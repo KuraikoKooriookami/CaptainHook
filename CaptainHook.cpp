@@ -52,7 +52,7 @@ struct WorldState {
 	SDL_FPoint hookPosition = { 0, 0 };
 	SDL_Rect spriteSheet[16][12] = { 0, 0, TILESIZE , TILESIZE };
 	vector<vector<int>>  map;
-	int stage = 1;
+	int stage = 3;
 	vector2 playerVelocity = { 0, 0 };
 	vector2 appliedForce = { 0, 0 };
 	bool hookFlying = false;
