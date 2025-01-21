@@ -720,6 +720,10 @@ void renderGraphics(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 		Message = SDL_CreateTextureFromSurface(ws.renderer, surfaceMessage);
 		Message_rect = { 1475 - camera.x, 600 - camera.y, 300, 50 };
 		SDL_RenderCopyF(ws.renderer, Message, NULL, &Message_rect);
+		surfaceMessage = TTF_RenderText_Solid(ws.font, "The Goal is to reach the Flag!", Black);
+		Message = SDL_CreateTextureFromSurface(ws.renderer, surfaceMessage);
+		Message_rect = { 900 - camera.x, 50 - camera.y, 300, 50 };
+		SDL_RenderCopyF(ws.renderer, Message, NULL, &Message_rect);
 	}
 
 	SDL_Rect playerRect = { ws.player.x - camera.x, ws.player.y - camera.y, ws.player.w, ws.player.h };
