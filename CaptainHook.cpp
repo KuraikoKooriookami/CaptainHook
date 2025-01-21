@@ -208,13 +208,13 @@ void drawObstacle(const WorldState& ws, SDL_FRect destRect,int obstacleValue)
 	case(RSPEAR_ROD):
 		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[0][5], &destRect); break;
 	case(RSPEAR_TIP):
-		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[1][4], &destRect); break;
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[1][5], &destRect); break;
 	case(USPEAR_ROD):
-		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[2][4], &destRect); break;
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[2][5], &destRect); break;
 	case(DSPEAR_TIP):
-		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[3][4], &destRect); break;
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[3][5], &destRect); break;
 	case(FENCE):
-		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[4][4], &destRect); break;
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[4][5], &destRect); break;
 	case (FINISH_ROD):
 		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[1][6], &destRect); break;
 	case(FINISH_FLAG):
@@ -257,15 +257,6 @@ void getMap(WorldState& ws, const string& level)
 						int value = stoi(number);
 						rowData.push_back(value);
 
-						//if (value > 0) {
-						//	SDL_FRect rect = {
-						//		static_cast<float>(rowData.size()) * TILESIZE,
-						//		static_cast<float>(row ) * TILESIZE,
-						//		TILESIZE,
-						//		TILESIZE
-						//	};
-						//	obstacles.push_back(rect);
-						//}
 					}
 				}
 			}
@@ -277,14 +268,6 @@ void getMap(WorldState& ws, const string& level)
 	else {
 		cerr << "No file: " << level << " found" << endl;
 	}
-	/* Optionally print the levelData for verification
-	std::cout << "Level data loaded:" << std::endl;
-	for (const auto& row : ws.map) {
-		for (const auto& value : row) {
-			std::cout << value << " ";
-		}
-		std::cout << std::endl;
-	}*/
 }
 
 void loadLevelAndDraw(WorldState& ws, vector<SDL_FRect_P>& obstacles)
@@ -581,7 +564,7 @@ void mutateWorldState(WorldState& ws,  vector<SDL_FRect_P>& obstacles, double de
 				ws.ground = false;
 				ws.playerVelocity.y = 0;
 			}
-			if (obstacle.obstacleValue >= 43){
+			if (obstacle.obstacleValue >= 43 || obstacle.obstacleValue == SPIKEBALL){
 				if (obstacle.obstacleValue == FINISH_FLAG || obstacle.obstacleValue == FINISH_ROD) {
 					ws.stage++;
 					string basePath = SDL_GetBasePath();
