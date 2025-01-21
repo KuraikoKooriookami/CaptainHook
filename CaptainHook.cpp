@@ -143,6 +143,16 @@ void drawObstacle(const WorldState& ws, SDL_FRect destRect,int obstacleValue)
 		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[0][0], &destRect);    break; //done
 	case (EARTH):
 		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[1][0], &destRect);    break; //done
+	case (ULC_GRASS):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[2][0], &destRect);    break;//done
+	case (URC_GRASS):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[3][0], &destRect);    break;//done
+	case (DRC_GRASS):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[4][0], &destRect);    break;//done
+	case (DLC_GRASS):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[5][0], &destRect);    break;//done
+	case (LC_GRASS):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[6][0], &destRect);    break;//done
 	case (U_GRASS):
 		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[0][1], &destRect);    break; //done
 	case (R_GRASS):
@@ -151,52 +161,60 @@ void drawObstacle(const WorldState& ws, SDL_FRect destRect,int obstacleValue)
 		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[2][1], &destRect);    break;//done
 	case (L_GRASS):
 		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[3][1], &destRect);    break;//done
-	case (ULC_GRASS):
-		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[2][0], &destRect);    break;//done
-	case (URC_GRASS):
-		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[3][0], &destRect);    break;//done
-	case (DLC_GRASS):
-		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[5][0], &destRect);    break;//done
-	case (DRC_GRASS):
-		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[4][0], &destRect);    break;//done
-	case (RC_GRASS):
-		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[6][1], &destRect);    break;//done
-	case (LC_GRASS):
-		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[6][0], &destRect);    break;//done
-	case (UR_GRASS):
-		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[3][2], &destRect);    break;//done
-	case (UL_GRASS):
-		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[2][2], &destRect);    break;//done
-	case (DL_GRASS):
-		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[1][3], &destRect);    break;//not used
-	case (DR_GRASS):
-		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[0][3], &destRect);    break;//not used
-	case (R_EARTH):
-		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[5][1], &destRect);    break;//done
-	case (D_EARTH):
-		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[2][3], &destRect);    break;//done
 	case (L_EARTH):
 		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[4][1], &destRect);    break;//done
-	case (DLC_EARTH):
-		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[4][2], &destRect);    break;//done
-	case (DRC_EARTH):
-		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[5][2], &destRect);    break;//done
-	case (DLCORNER_EARTH):
-		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[4][3], &destRect);    break;//done
-	case (DRCORNER_EARTH):
-		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[3][3], &destRect);    break;//done
+	case (R_EARTH):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[5][1], &destRect);    break;//done
+	case (RC_GRASS):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[6][1], &destRect);    break;//done
 	case (ULCLONGER_GRASS):
 		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[0][2], &destRect);    break;
 	case (URCLONGER_GRASS):
 		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[1][2], &destRect);    break;
+	case (UL_GRASS):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[2][2], &destRect);    break;//done
+	case (UR_GRASS):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[3][2], &destRect);    break;//done
+	case (DLC_EARTH):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[4][2], &destRect);    break;//done
+	case (DRC_EARTH):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[5][2], &destRect);    break;//done
+	case (DR_GRASS):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[0][3], &destRect);    break;
+	case (DL_GRASS):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[1][3], &destRect);    break;
+	case (D_EARTH):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[2][3], &destRect);    break;//done
+	case (DRCORNER_EARTH):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[3][3], &destRect);    break;//done
+	case (DLCORNER_EARTH):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[4][3], &destRect);    break;//done
 	case (UNHOOKABLE):
 		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[5][3], &destRect);	break;
+	case(SPIKEBALL):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[6][3], &destRect); break;
+	case(LSPEAR_TIP):
+			SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[0][4], &destRect); break;
+	case(LSPEAR_ROD):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[1][4], &destRect); break;
+	case(USPEAR_TIP):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[2][4], &destRect); break;
+	case(DSPEAR_ROD):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[3][4], &destRect); break;
+	case(RSPEAR_ROD):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[0][5], &destRect); break;
+	case(RSPEAR_TIP):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[1][4], &destRect); break;
+	case(USPEAR_ROD):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[2][4], &destRect); break;
+	case(DSPEAR_TIP):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[3][4], &destRect); break;
+	case(FENCE):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[4][4], &destRect); break;
 	case (FINISH_ROD):
 		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[1][6], &destRect); break;
 	case(FINISH_FLAG):
 		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[2][6], &destRect); break;
-	case(SPIKEBALL):
-		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[6][3], &destRect); break;
 	default:
 		break;
 	}
