@@ -62,7 +62,7 @@ struct WorldState {
 	float HOOKFLYINGSPEED = 35;
 	float HOOKSTRENGTH = 1.75;
 	bool ground = false;
-	bool canJump = true;
+	int jumps = 0;
 	double maxMovement = 0;
 
 };
@@ -396,17 +396,18 @@ void readEvents(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 	}
 
 	while (SDL_PollEvent(&event)){
-		if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_W && ws.canJump) {
-			if (!ws.ground) {
-				ws.canJump = false;
+		if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_W) {
+			if (ws.jumps == 1) {
+				ws.jumps = 2;
 				ws.ground = false;
-				cout << "DOUBLE JUMPED" << endl;
+				ws.playerVelocity.y = v.JUMP * -1;
 			}
-			else {
+			else if(ws.jumps == 0){
 				ws.ground = false;
-				cout << "JUMPED" << endl;
+				ws.jumps = 1;
+				ws.playerVelocity.y = v.JUMP * -1;
 			}
-			ws.playerVelocity.y = v.JUMP * -1;
+			//ws.playerVelocity.y = v.JUMP * -1;
 		}
 		if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_RIGHT) 
 		{
@@ -530,13 +531,18 @@ void mutateWorldState(WorldState& ws,  vector<SDL_FRect_P>& obstacles, double de
 
 	ws.player.y += ws.playerVelocity.y;
 
+	if (ws.playerVelocity.y != 0 && ws.ground == true) {
+		ws.jumps = 1;
+		ws.ground = false;
+	}
+
 	for (const auto& obstacle : obstacles) {
 		SDL_FRect obstacleRect = obstacle.rect;
 		if (SDL_HasIntersectionF(&ws.player, &obstacleRect)) {
 			if (ws.playerVelocity.y > 0) {
 				ws.player.y = obstacleRect.y - ws.player.h;
 				ws.ground = true;
-				ws.canJump = true;
+				ws.jumps = 0;
 				ws.playerVelocity.y = 0;
 			}
 			else {
@@ -579,6 +585,7 @@ void mutateWorldState(WorldState& ws,  vector<SDL_FRect_P>& obstacles, double de
 					string basePath = SDL_GetBasePath();
 					basePath = basePath + "../../";
 					string file = string(basePath) + "/levels/map" + to_string(ws.stage) + ".txt";
+					ws.map.clear();
 					getMap(ws, file);
 					loadLevelAndDraw(ws, obstacles);
 				}
