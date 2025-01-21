@@ -89,7 +89,10 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="x64\Debug\levels\map.txt" />
-    <Text Include="levels\map1.txt" />
-    <Text Include="levels\map2.txt" />
+    <Text Include="levels\mapTest.txt" />
+    <Text Include="levels\mapOld.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Font Include="CaptainHook\x64\Debug\Sans.ttf" />
   </ItemGroup>
 </Project>

@@ -5,6 +5,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <SDL_ttf.h>
 
 #define SCREEN_WIDTH 850 *1.5
 #define SCREEN_HEIGHT  600 *1.5
@@ -38,7 +39,8 @@ struct WorldState {
 	SDL_Renderer* renderer;
 	SDL_Surface* image;
 	SDL_Texture* texture;
-	SDL_Texture* texture2;
+	SDL_Texture* textureText;
+	TTF_Font* font;
 	SDL_Texture* hookTexture;
 	SDL_Texture* linkTexture;
 	SDL_Texture* rodTexture;
@@ -340,6 +342,7 @@ void initWorldState(WorldState& ws) {
 	string texturePath = basePath + "/Images/SpriteSheet.png";
 	string texturePathHook = basePath + "/Images/hook.png";
 	string texturePathChain = basePath + "/Images/link.png";
+	string fontPath = basePath + "/monogram.ttf";
 	ws.texture = IMG_LoadTexture(ws.renderer, texturePath.c_str());
 	ws.hookTexture = IMG_LoadTexture(ws.renderer, texturePathHook.c_str());
 	ws.linkTexture = IMG_LoadTexture(ws.renderer, texturePathChain.c_str());
@@ -355,6 +358,15 @@ void initWorldState(WorldState& ws) {
 	if (!(IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG)) {
 		printf("Ey ne Fehlermeldung w�re ganz nett");
 		SDL_Quit();
+		exit(0);
+	}    
+	if (TTF_Init() == -1) {
+		printf("Failed to initialize TTF: %s\n", TTF_GetError());
+		exit(0);
+	}
+	ws.font = TTF_OpenFont(fontPath.c_str(), 24);
+	if (!ws.font) {
+		printf("Failed to load font: %s\n", TTF_GetError());
 		exit(0);
 	}
 
@@ -691,6 +703,14 @@ void renderGraphics(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 		}
 	}
 
+	if (ws.stage == 1)
+	{
+		SDL_Color Black = { 0, 0, 0, 0 };
+		SDL_Surface* surfaceMessage = TTF_RenderText_Solid(ws.font, "Press 'A' or 'D'", Black);
+		SDL_Texture* Message = SDL_CreateTextureFromSurface(ws.renderer, surfaceMessage);
+		SDL_Rect Message_rect = { 0, 100, 200, 50 };
+		SDL_RenderCopy(ws.renderer, Message, NULL, &Message_rect);
+	}
 
 	SDL_Rect playerRect = { ws.player.x - camera.x, ws.player.y - camera.y, ws.player.w, ws.player.h };
 	SDL_Rect monkey = { 0 * 64, 6 * 64, 64, 64};
@@ -721,6 +741,7 @@ int main(int argc, char* args[])
 	}
 
 	SDL_DestroyTexture(worldState.texture);
+	SDL_DestroyTexture(worldState.textureText);
 	SDL_DestroyRenderer(worldState.renderer);
 	IMG_Quit();
 	SDL_Quit();

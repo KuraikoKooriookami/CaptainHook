@@ -162,6 +162,9 @@
     <Text Include="levels\mapOld.txt" />
     <Text Include="x64\Debug\levels\map.txt" />
   </ItemGroup>
+  <ItemGroup>
+    <Font Include="CaptainHook\x64\Debug\Sans.ttf" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="packages\sdl2.nuget.redist.2.30.9\build\native\sdl2.nuget.redist.targets" Condition="Exists('packages\sdl2.nuget.redist.2.30.9\build\native\sdl2.nuget.redist.targets')" />
