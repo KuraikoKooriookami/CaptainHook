@@ -107,8 +107,8 @@ enum obstacleID { //UDLR = Directions, C = curved
 	L_EARTH,					//18
 	R_EARTH,					//16
 	RC_GRASS,				//10
-	URCLONGER_GRASS, //23
-	ULCLONGER_GRASS, //24
+	ULCLONGER_GRASS, //23
+	URCLONGER_GRASS, //24
 	UL_GRASS,				//13
 	UR_GRASS,				//12
 	DLC_EARTH,				//19
