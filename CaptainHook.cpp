@@ -706,10 +706,30 @@ void renderGraphics(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 	if (ws.stage == 1)
 	{
 		SDL_Color Black = { 0, 0, 0, 0 };
-		SDL_Surface* surfaceMessage = TTF_RenderText_Solid(ws.font, "Press 'A' or 'D'", Black);
+		SDL_Surface* surfaceMessage = TTF_RenderText_Solid(ws.font, "Press 'A' or 'D' to Walk", Black);
 		SDL_Texture* Message = SDL_CreateTextureFromSurface(ws.renderer, surfaceMessage);
-		SDL_Rect Message_rect = { 0, 100, 200, 50 };
-		SDL_RenderCopy(ws.renderer, Message, NULL, &Message_rect);
+		SDL_FRect Message_rect = { 200-camera.x, 1150-camera.y, 300, 50 };
+		SDL_RenderCopyF(ws.renderer, Message, NULL, &Message_rect);
+		surfaceMessage = TTF_RenderText_Solid(ws.font, "Press 'W' to Jump", Black);
+		Message = SDL_CreateTextureFromSurface(ws.renderer, surfaceMessage);
+		Message_rect = { 700 - camera.x, 1150 - camera.y, 300, 50 };
+		SDL_RenderCopyF(ws.renderer, Message, NULL, &Message_rect);
+		surfaceMessage = TTF_RenderText_Solid(ws.font, "Avoid These", Black);
+		Message = SDL_CreateTextureFromSurface(ws.renderer, surfaceMessage);
+		Message_rect = { 700 - camera.x, 1450 - camera.y, 300, 50 };
+		SDL_RenderCopyF(ws.renderer, Message, NULL, &Message_rect);
+		surfaceMessage = TTF_RenderText_Solid(ws.font, "Press 'W' while in Air", Black);
+		Message = SDL_CreateTextureFromSurface(ws.renderer, surfaceMessage);
+		Message_rect = { 1150 - camera.x, 1150 - camera.y, 300, 50 };
+		SDL_RenderCopyF(ws.renderer, Message, NULL, &Message_rect);
+		surfaceMessage = TTF_RenderText_Solid(ws.font, "Rightclick to Hook", Black);
+		Message = SDL_CreateTextureFromSurface(ws.renderer, surfaceMessage);
+		Message_rect = {  1150 - camera.x, 850 - camera.y, 300, 50 };
+		SDL_RenderCopyF(ws.renderer, Message, NULL, &Message_rect);
+		/*SDL_Surface* surfaceMessage = TTF_RenderText_Solid(ws.font, "Press 'A' or 'D' to Walk", Black);
+		SDL_Texture* Message = SDL_CreateTextureFromSurface(ws.renderer, surfaceMessage);
+		SDL_Rect Message_rect = { 200 - camera.x, 1150 - camera.y, 300, 50 };
+		SDL_RenderCopy(ws.renderer, Message, NULL, &Message_rect);*/
 	}
 
 	SDL_Rect playerRect = { ws.player.x - camera.x, ws.player.y - camera.y, ws.player.w, ws.player.h };
