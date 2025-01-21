@@ -158,8 +158,8 @@
     <Image Include="x64\Debug\Images\winter_main.png" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="levels\map1.txt" />
-    <Text Include="levels\map2.txt" />
+    <Text Include="levels\mapTest.txt" />
+    <Text Include="levels\mapOld.txt" />
     <Text Include="x64\Debug\levels\map.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

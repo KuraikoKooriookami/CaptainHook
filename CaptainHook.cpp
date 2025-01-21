@@ -90,8 +90,9 @@ struct velocity {
 };
 
 enum obstacleID { //UDLR = Directions, C = curved
-	EMPTY,					//0
-	EARTH,						//1
+	NOTSET = -1,
+	EMPTY = 0,			//0
+	EARTH = 1,						//1
 	ULC_GRASS,			//6
 	URC_GRASS,			//7
 	DRC_GRASS,			//9
@@ -139,6 +140,7 @@ void drawObstacle(const WorldState& ws, SDL_FRect destRect,int obstacleValue)
 	obstacleID obstacle = static_cast<obstacleID>(obstacleValue);
 
 	switch (obstacle) {
+	case (NOTSET):
 	case (EMPTY):
 		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[0][0], &destRect);    break; //done
 	case (EARTH):
@@ -290,7 +292,7 @@ void loadLevelAndDraw(WorldState& ws, vector<SDL_FRect_P>& obstacles)
 		for (int col = 0; col < ws.map[row].size(); col++){
 			int value = ws.map[row][col];
 
-			if (ws.map[row][col] == 90) {
+			if (ws.map[row][col] == 42) {
 				spawnLocation.x = col * TILESIZE;
 				spawnLocation.y = row * TILESIZE;
 				ws.player.x = spawnLocation.x;
@@ -674,7 +676,7 @@ void renderGraphics(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 		int mapWidth = ws.map[row].size();
 		for (int col = 0; col < mapWidth; col++) {
 			int tileValue = ws.map[row][col];
-			if (tileValue > 0 && tileValue != 90) {
+			if (tileValue > 0 && tileValue != 42) {
 				SDL_FRect_P rect_p = obstacles[i];
 				i++;
 
@@ -708,10 +710,10 @@ int main(int argc, char* args[])
 
 
 	while (true) {
-		LAST = NOW;
+		/*LAST = NOW;
 		NOW = SDL_GetPerformanceCounter();
 
-		deltaT = (double)((NOW - LAST) * 1000 / (double)SDL_GetPerformanceFrequency());
+		deltaT = (double)((NOW - LAST) * 1000 / (double)SDL_GetPerformanceFrequency());*/
 		readEvents(worldState, obstacles);
 		mutateWorldState(worldState, obstacles, deltaT);
 		handle_camera(worldState);
