@@ -249,7 +249,7 @@ void getMap(WorldState& ws, const string& level)
 			while (getline(rowStream, number, ',')) {
 					// Remove non-digit characters (if any left after erase)
 					number.erase(remove_if(number.begin(), number.end(),
-					[](unsigned char c) { return !isdigit(c); }),
+					[](unsigned char c) { return !isdigit(c) && c != '-'; }),
 					number.end());
 
 					if (!number.empty()) {
