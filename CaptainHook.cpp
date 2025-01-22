@@ -323,7 +323,7 @@ void initWorldState(WorldState& ws) {
 
 	string basePath = SDL_GetBasePath();
 	basePath = basePath + "../../";
-	string texturePath = basePath + "/Images/SpriteSheet.png";
+	string texturePath = basePath + "/Images/SpriteSheet_Copy.png";
 	string texturePathHook = basePath + "/Images/hook.png";
 	string texturePathChain = basePath + "/Images/link.png";
 	string fontPath = basePath + "/monogram.ttf";
