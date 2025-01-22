@@ -140,7 +140,8 @@ vector<SDL_FRect_P> obstacles;
 void drawObstacle(const WorldState& ws, SDL_FRect destRect,int obstacleValue)
 {
 	obstacleID obstacle = static_cast<obstacleID>(obstacleValue);
-
+	destRect.x = ceil(destRect.x);
+	destRect.y = ceil(destRect.y);
 	switch (obstacle) {
 	case (NOTSET):
 	case (EMPTY):
