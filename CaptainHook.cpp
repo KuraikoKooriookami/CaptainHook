@@ -487,7 +487,7 @@ void mutateWorldState(WorldState& ws,  vector<SDL_FRect_P>& obstacles, double de
 					ws.hookFlying = false;
 					ws.hookGoal = ws.hookPosition;
 					if (ws.playerVelocity.y * direction.y > 0)
-						ws.playerVelocity.y = ws.playerVelocity.y * 0.5;
+						ws.playerVelocity.y = ws.playerVelocity.y * 0.4;
 					if (ws.playerVelocity.x * direction.x > 0)
 						ws.playerVelocity.x = ws.playerVelocity.x * 0.75;
 					break;
