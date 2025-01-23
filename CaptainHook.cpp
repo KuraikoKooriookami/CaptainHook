@@ -593,9 +593,7 @@ void mutateWorldState(WorldState& ws, vector<SDL_FRect_P>& obstacles, double del
 						ws.map.clear();
 						getMap(ws, file);
 						loadLevelAndDraw(ws, obstacles);
-						ws.deaths--;
 					}
-					ws.deaths++;
 					resetPlayer(ws);
 					break;
 				}
@@ -637,9 +635,7 @@ void mutateWorldState(WorldState& ws, vector<SDL_FRect_P>& obstacles, double del
 						ws.map.clear();
 						getMap(ws, file);
 						loadLevelAndDraw(ws, obstacles);
-						ws.deaths--;
 					}
-					ws.deaths++;
 					resetPlayer(ws);
 					break;
 				}
