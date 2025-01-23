@@ -714,6 +714,8 @@ void renderGraphics(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 		SDL_Texture* Message = SDL_CreateTextureFromSurface(ws.renderer, surfaceMessage);
 		SDL_FRect Message_rect = { 200-camera.x, 1150-camera.y, 300, 50 };
 		SDL_RenderCopyF(ws.renderer, Message, NULL, &Message_rect);
+		SDL_FreeSurface(surfaceMessage);
+		SDL_DestroyTexture(Message);
 		surfaceMessage = TTF_RenderText_Solid(ws.font, "Press 'W' to Jump", Black);
 		Message = SDL_CreateTextureFromSurface(ws.renderer, surfaceMessage);
 		Message_rect = { 700 - camera.x, 1150 - camera.y, 300, 50 };
