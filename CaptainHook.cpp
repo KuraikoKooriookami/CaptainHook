@@ -6,6 +6,7 @@
 #include <sstream>
 #include <string>
 #include <SDL_ttf.h>
+#include <cmath>
 
 #define SCREEN_WIDTH 850 *1.5
 #define SCREEN_HEIGHT  600 *1.5
@@ -48,6 +49,7 @@ struct WorldState {
 	SDL_Texture* spikeTexture;
 	SDL_Texture* playerTexture;
 	SDL_FRect player = { 0*TILESIZE, 0*TILESIZE, TILESIZE, TILESIZE };
+	SDL_FRect hurtbox = { 0 * TILESIZE, 0 * TILESIZE, 16, 16 };
 	SDL_FPoint hookGoal = { 0, 0 };
 	SDL_FPoint hookPosition = { 0, 0 };
 	SDL_Rect spriteSheet[16][12] = { 0, 0, TILESIZE , TILESIZE };
@@ -66,7 +68,7 @@ struct WorldState {
 	bool ground = false;
 	int jumps = 0;
 	double maxMovement = 0;
-
+	int deaths = 0;
 };
 
 struct {
@@ -283,6 +285,8 @@ void loadLevelAndDraw(WorldState& ws, vector<SDL_FRect_P>& obstacles)
 				spawnLocation.y = row * TILESIZE;
 				ws.player.x = spawnLocation.x;
 				ws.player.y = spawnLocation.y;
+				ws.hurtbox.x = ws.player.x + 4;
+				ws.hurtbox.y = ws.player.y + 4;
 				continue;
 			}
 
@@ -311,6 +315,8 @@ void resetPlayer(WorldState& ws) {
 	ws.playerVelocity.y = 0;
 	ws.player.x = spawnLocation.x;
 	ws.player.y = spawnLocation.y;
+	ws.hurtbox.x = ws.player.x + 4;
+	ws.hurtbox.y = ws.player.y + 4;
 	ws.respawn = false;
 	ws.hookConnected = false;
 	ws.hookNoObstacleFound = true;
@@ -411,7 +417,7 @@ void readEvents(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 	}
 
 	while (SDL_PollEvent(&event)){
-		if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_W) {
+		if (event.type == SDL_KEYDOWN && (event.key.keysym.scancode == SDL_SCANCODE_W || event.key.keysym.scancode == SDL_SCANCODE_SPACE)) {
 			if (ws.jumps == 1) {
 				ws.jumps = 2;
 				ws.ground = false;
@@ -456,10 +462,10 @@ void handle_camera(WorldState& ws) {
 	}*/
 }
 
-void mutateWorldState(WorldState& ws,  vector<SDL_FRect_P>& obstacles, double deltaT) {
+void mutateWorldState(WorldState& ws, vector<SDL_FRect_P>& obstacles, double deltaT) {
 	vector2 hookPull = { 0,0 };
 	vector2 speedVector = { 0,0 };
-	velocity v;	
+	velocity v;
 	if (ws.hookFlying && !ws.hookConnected && !ws.hookNoObstacleFound) {
 		vector2 direction = calculateDirection(ws.player, ws.hookGoal);
 		ws.hookPosition.x = ws.player.x + ws.player.w / 2 + (direction.x * ws.HOOKFLYINGSPEED * ws.amountOfHookTicks);// * deltaT;
@@ -507,10 +513,10 @@ void mutateWorldState(WorldState& ws,  vector<SDL_FRect_P>& obstacles, double de
 			speedVector.y += hookPull.y * 0.85;
 		if (hookPull.x * ws.maxMovement < 0) {
 			//dampen pull when moving in opposite direction
-			speedVector.x += hookPull.x *0.77;
+			speedVector.x += hookPull.x * 0.77;
 		}
 		else
-			speedVector.x += hookPull.x *1.2;
+			speedVector.x += hookPull.x * 1.2;
 
 		speedVector.x *= ws.HOOKSTRENGTH;
 
@@ -535,7 +541,13 @@ void mutateWorldState(WorldState& ws,  vector<SDL_FRect_P>& obstacles, double de
 	}
 	else {
 		if (!ws.hookConnected) {
-			ws.playerVelocity.x *= v.SLIDING;
+			if (!ws.ground) {
+				ws.playerVelocity.x *= v.SLIDING * 1.1;
+
+			}
+			else {
+				ws.playerVelocity.x *= v.SLIDING;
+			}
 			if (abs(ws.playerVelocity.x) < 1)
 				ws.playerVelocity.x = 0;
 		}
@@ -548,6 +560,7 @@ void mutateWorldState(WorldState& ws,  vector<SDL_FRect_P>& obstacles, double de
 	ws.playerVelocity.y = SDL_clamp(ws.playerVelocity.y, -v.MAXSPEED, v.MAXSPEED);
 
 	ws.player.y += ws.playerVelocity.y;
+	ws.hurtbox.y = ws.player.y + 4;
 
 	if (ws.playerVelocity.y != 0 && ws.ground == true) {
 		ws.jumps = 1;
@@ -557,68 +570,86 @@ void mutateWorldState(WorldState& ws,  vector<SDL_FRect_P>& obstacles, double de
 	for (const auto& obstacle : obstacles) {
 		SDL_FRect obstacleRect = obstacle.rect;
 		if (SDL_HasIntersectionF(&ws.player, &obstacleRect)) {
-			if (ws.playerVelocity.y > 0) {
-				ws.player.y = obstacleRect.y - ws.player.h;
-				ws.ground = true;
-				ws.jumps = 0;
-				ws.playerVelocity.y = 0;
-			}
-			else {
-				ws.player.y = obstacleRect.y + obstacleRect.h;
-				ws.ground = false;
-				ws.playerVelocity.y = 0;
-			}
-			if (obstacle.obstacleValue >= 43 || obstacle.obstacleValue == SPIKEBALL || (obstacle.obstacleValue >= 28 && obstacle.obstacleValue <= 38)){
-				if (obstacle.obstacleValue == FINISH_FLAG || obstacle.obstacleValue == FINISH_ROD) {
-					ws.stage++;
-					string basePath = SDL_GetBasePath();
-					basePath = basePath + "../../";
-					string file = string(basePath) + "/levels/map" + to_string(ws.stage) + ".txt";
-					ws.map.clear();
-					getMap(ws, file);
-					loadLevelAndDraw(ws, obstacles);
+			if (obstacle.obstacleValue != SPIKEBALL && obstacle.obstacleValue != USPEAR_TIP && obstacle.obstacleValue != RSPEAR_TIP && obstacle.obstacleValue != DSPEAR_TIP && obstacle.obstacleValue != LSPEAR_TIP) {
+				if (ws.playerVelocity.y > 0) {
+					ws.player.y = obstacleRect.y - ws.player.h;
+					ws.hurtbox.y = ws.player.y + 4;
+					ws.ground = true;
+					ws.jumps = 0;
+					ws.playerVelocity.y = 0;
 				}
+				else {
+					ws.player.y = obstacleRect.y + obstacleRect.h;
+					ws.hurtbox.y = ws.player.y + 4;
+					ws.ground = false;
+					ws.playerVelocity.y = 0;
+				}
+				if (obstacle.obstacleValue >= 43) {
+					if (obstacle.obstacleValue == FINISH_FLAG || obstacle.obstacleValue == FINISH_ROD) {
+						ws.stage++;
+						string basePath = SDL_GetBasePath();
+						basePath = basePath + "../../";
+						string file = string(basePath) + "/levels/map" + to_string(ws.stage) + ".txt";
+						ws.map.clear();
+						getMap(ws, file);
+						loadLevelAndDraw(ws, obstacles);
+						ws.deaths--;
+					}
+					ws.deaths++;
+					resetPlayer(ws);
+					break;
+				}
+			}
+		}
+		if (SDL_HasIntersectionF(&ws.hurtbox, &obstacleRect)) {
+			if (obstacle.obstacleValue == SPIKEBALL || obstacle.obstacleValue == USPEAR_TIP || obstacle.obstacleValue == RSPEAR_TIP || obstacle.obstacleValue == DSPEAR_TIP || obstacle.obstacleValue == LSPEAR_TIP) {
 				resetPlayer(ws);
-				break;
 			}
 		}
 	}
 
 	ws.player.x += ws.playerVelocity.x;
+	ws.hurtbox.x = ws.player.x + 4;
+
 	for (const auto& obstacle : obstacles) {
 		SDL_FRect obstacleRect = obstacle.rect;
 		if (SDL_HasIntersectionF(&ws.player, &obstacleRect)) {
-			if (ws.playerVelocity.x > 0) {
-				ws.player.x = obstacleRect.x - ws.player.w;
-				ws.playerVelocity.x = 0;
-			}
-			else {
-				if (ws.playerVelocity.x < 0){
-					ws.player.x = obstacleRect.x + obstacleRect.w;
+			if (obstacle.obstacleValue != SPIKEBALL && obstacle.obstacleValue != USPEAR_TIP && obstacle.obstacleValue != RSPEAR_TIP && obstacle.obstacleValue != DSPEAR_TIP && obstacle.obstacleValue != LSPEAR_TIP) {
+				if (ws.playerVelocity.x > 0) {
+					ws.player.x = obstacleRect.x - ws.player.w;
+					ws.hurtbox.x = ws.player.x + 4;
 					ws.playerVelocity.x = 0;
 				}
-			}
-			if (obstacle.obstacleValue >= 43 || obstacle.obstacleValue == SPIKEBALL || (obstacle.obstacleValue >= 28 && obstacle.obstacleValue <= 38)) {
-				if (obstacle.obstacleValue == FINISH_FLAG || obstacle.obstacleValue == FINISH_ROD) {
-					ws.stage++;
-					string basePath = SDL_GetBasePath();
-					basePath = basePath + "../../";
-					string file = string(basePath) + "/levels/map" + to_string(ws.stage) + ".txt";
-					ws.map.clear();
-					getMap(ws, file);
-					loadLevelAndDraw(ws, obstacles);
+				else {
+					if (ws.playerVelocity.x < 0) {
+						ws.player.x = obstacleRect.x + obstacleRect.w;
+						ws.hurtbox.x = ws.player.x + 4;
+						ws.playerVelocity.x = 0;
+					}
 				}
+				if (obstacle.obstacleValue >= 43) {
+					if (obstacle.obstacleValue == FINISH_FLAG || obstacle.obstacleValue == FINISH_ROD) {
+						ws.stage++;
+						string basePath = SDL_GetBasePath();
+						basePath = basePath + "../../";
+						string file = string(basePath) + "/levels/map" + to_string(ws.stage) + ".txt";
+						ws.map.clear();
+						getMap(ws, file);
+						loadLevelAndDraw(ws, obstacles);
+						ws.deaths--;
+					}
+					ws.deaths++;
+					resetPlayer(ws);
+					break;
+				}
+			}
+		}
+		if (SDL_HasIntersectionF(&ws.hurtbox, &obstacleRect)) {
+			if (obstacle.obstacleValue == SPIKEBALL || obstacle.obstacleValue == USPEAR_TIP || obstacle.obstacleValue == RSPEAR_TIP || obstacle.obstacleValue == DSPEAR_TIP || obstacle.obstacleValue == LSPEAR_TIP) {
 				resetPlayer(ws);
-				break;
 			}
 		}
 	}
-
-	/*string file = string(basePath) + "/levels/map.txt";
-	if (ws.respawn == true) {
-		resetPlayer(ws);
-	}
-	getMap(ws, file);*/
 }
 
 void initSpriteSheet(WorldState& ws) {
@@ -635,6 +666,7 @@ void initSpriteSheet(WorldState& ws) {
 }
 
 void renderGraphics(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
+	SDL_Color Black = { 0, 0, 0, 0 };
 	SDL_SetRenderDrawColor(ws.renderer, 89, 181, 226, 0);
 	SDL_RenderClear(ws.renderer);
 	if (ws.hookFlying || ws.hookConnected || !ws.hookNoObstacleFound) {
@@ -653,21 +685,9 @@ void renderGraphics(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 		}		
 	}
 
+
+
 	SDL_SetRenderDrawColor(ws.renderer, 255, 0, 0, 255);
-	//for (const auto& obstacle : obstacles) {
-	//	SDL_FRect rect = obstacle;
-	//	rect.x = rect.x - camera.x;
-	//	rect.y = rect.y - camera.y;
-
-	//	// Check if the obstacle is within the camera's bounds (screen view)
-	//	if (rect.x + rect.w > 0 && rect.x < SCREEN_WIDTH && rect.y + rect.h > 0 && rect.y < SCREEN_HEIGHT) {
-	//		int obstacleValue = ws.map[static_cast<int>(rect.x/TILESIZE)][static_cast<int>(rect.y/TILESIZE)];
-	//		drawObstacle(ws, rect, obstacleValue);
-	//		//SDL_RenderFillRectF(ws.renderer, &rect);
-	//	}
-	//}
-
-
 
 	int mapHeight = ws.map.size();
 	int i = 0;
@@ -692,7 +712,6 @@ void renderGraphics(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 
 	if (ws.stage == 1)
 	{
-		SDL_Color Black = { 0, 0, 0, 0 };
 		SDL_Surface* surfaceMessage = TTF_RenderText_Solid(ws.font, "Press 'A' or 'D' to Walk", Black);
 		SDL_Texture* Message = SDL_CreateTextureFromSurface(ws.renderer, surfaceMessage);
 		SDL_FRect Message_rect = { 200-camera.x, 1150-camera.y, 300, 50 };
@@ -701,31 +720,52 @@ void renderGraphics(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 		Message = SDL_CreateTextureFromSurface(ws.renderer, surfaceMessage);
 		Message_rect = { 700 - camera.x, 1150 - camera.y, 300, 50 };
 		SDL_RenderCopyF(ws.renderer, Message, NULL, &Message_rect);
+		SDL_FreeSurface(surfaceMessage); 
+		SDL_DestroyTexture(Message);     
 		surfaceMessage = TTF_RenderText_Solid(ws.font, "Avoid These", Black);
 		Message = SDL_CreateTextureFromSurface(ws.renderer, surfaceMessage);
 		Message_rect = { 700 - camera.x, 1450 - camera.y, 300, 50 };
 		SDL_RenderCopyF(ws.renderer, Message, NULL, &Message_rect);
+		SDL_FreeSurface(surfaceMessage);
+		SDL_DestroyTexture(Message);     
 		surfaceMessage = TTF_RenderText_Solid(ws.font, "Press 'W' while in Air", Black);
 		Message = SDL_CreateTextureFromSurface(ws.renderer, surfaceMessage);
 		Message_rect = { 1475 - camera.x, 1150 - camera.y, 300, 50 };
 		SDL_RenderCopyF(ws.renderer, Message, NULL, &Message_rect);
+		SDL_FreeSurface(surfaceMessage);
+		SDL_DestroyTexture(Message);     
 		surfaceMessage = TTF_RenderText_Solid(ws.font, "Rightclick to Hook", Black);
 		Message = SDL_CreateTextureFromSurface(ws.renderer, surfaceMessage);
 		Message_rect = {  1200 - camera.x, 850 - camera.y, 300, 50 };
 		SDL_RenderCopyF(ws.renderer, Message, NULL, &Message_rect);
+		SDL_FreeSurface(surfaceMessage);
+		SDL_DestroyTexture(Message);     
 		surfaceMessage = TTF_RenderText_Solid(ws.font, "You cant Hook Iron Objects", Black);
 		Message = SDL_CreateTextureFromSurface(ws.renderer, surfaceMessage);
 		Message_rect = { 875 - camera.x, 600 - camera.y, 300, 50 };
 		SDL_RenderCopyF(ws.renderer, Message, NULL, &Message_rect);
+		SDL_FreeSurface(surfaceMessage);
+		SDL_DestroyTexture(Message);     
 		surfaceMessage = TTF_RenderText_Solid(ws.font, "You can Hook Through here", Black);
 		Message = SDL_CreateTextureFromSurface(ws.renderer, surfaceMessage);
 		Message_rect = { 1475 - camera.x, 600 - camera.y, 300, 50 };
 		SDL_RenderCopyF(ws.renderer, Message, NULL, &Message_rect);
+		SDL_FreeSurface(surfaceMessage);
+		SDL_DestroyTexture(Message);     
 		surfaceMessage = TTF_RenderText_Solid(ws.font, "The Goal is to reach the Flag!", Black);
 		Message = SDL_CreateTextureFromSurface(ws.renderer, surfaceMessage);
 		Message_rect = { 900 - camera.x, 50 - camera.y, 300, 50 };
 		SDL_RenderCopyF(ws.renderer, Message, NULL, &Message_rect);
+		SDL_FreeSurface(surfaceMessage);
+		SDL_DestroyTexture(Message);     
 	}
+	string deathText = "Deaths: " + to_string(ws.deaths);
+	SDL_Surface* deathMessage = TTF_RenderText_Solid(ws.font, deathText.c_str(), Black);
+	SDL_Texture* message = SDL_CreateTextureFromSurface(ws.renderer, deathMessage);
+	SDL_FRect death_rect = { 20, 10, 200, 50 };
+	SDL_RenderCopyF(ws.renderer, message, NULL, &death_rect);
+	SDL_FreeSurface(deathMessage);
+	SDL_DestroyTexture(message);
 
 	SDL_Rect playerRect = { ws.player.x - camera.x, ws.player.y - camera.y, ws.player.w, ws.player.h };
 	SDL_Rect monkey = { 0 * 64, 6 * 64, 64, 64};
