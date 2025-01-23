@@ -603,6 +603,7 @@ void mutateWorldState(WorldState& ws, vector<SDL_FRect_P>& obstacles, double del
 		}
 		if (SDL_HasIntersectionF(&ws.hurtbox, &obstacleRect)) {
 			if (obstacle.obstacleValue == SPIKEBALL || obstacle.obstacleValue == USPEAR_TIP || obstacle.obstacleValue == RSPEAR_TIP || obstacle.obstacleValue == DSPEAR_TIP || obstacle.obstacleValue == LSPEAR_TIP) {
+				ws.deaths++;
 				resetPlayer(ws);
 			}
 		}
@@ -646,6 +647,7 @@ void mutateWorldState(WorldState& ws, vector<SDL_FRect_P>& obstacles, double del
 		}
 		if (SDL_HasIntersectionF(&ws.hurtbox, &obstacleRect)) {
 			if (obstacle.obstacleValue == SPIKEBALL || obstacle.obstacleValue == USPEAR_TIP || obstacle.obstacleValue == RSPEAR_TIP || obstacle.obstacleValue == DSPEAR_TIP || obstacle.obstacleValue == LSPEAR_TIP) {
+				ws.deaths++;
 				resetPlayer(ws);
 			}
 		}
