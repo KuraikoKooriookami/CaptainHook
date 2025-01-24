@@ -663,6 +663,17 @@ void initSpriteSheet(WorldState& ws) {
 	}
 }
 
+
+void setText(WorldState& ws, const string& text, float positionX, float positionY, float width, float height, SDL_Color color) {
+	SDL_Surface* surfaceMessage = TTF_RenderText_Solid(ws.font, text.c_str(), color);
+	SDL_Texture* Message = SDL_CreateTextureFromSurface(ws.renderer, surfaceMessage);
+	SDL_FRect Message_rect = { positionX - camera.x, positionY - camera.y, width, height };
+	SDL_RenderCopyF(ws.renderer, Message, NULL, &Message_rect);
+	SDL_FreeSurface(surfaceMessage);
+	SDL_DestroyTexture(Message);
+}
+
+
 void renderGraphics(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 	SDL_Color Black = { 0, 0, 0, 0 };
 	SDL_SetRenderDrawColor(ws.renderer, 89, 181, 226, 0);
@@ -710,62 +721,16 @@ void renderGraphics(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 
 	if (ws.stage == 1)
 	{
-		SDL_Surface* surfaceMessage = TTF_RenderText_Solid(ws.font, "Press 'A' or 'D' to Walk", Black);
-		SDL_Texture* Message = SDL_CreateTextureFromSurface(ws.renderer, surfaceMessage);
-		SDL_FRect Message_rect = { 200-camera.x, 1150-camera.y, 300, 50 };
-		SDL_RenderCopyF(ws.renderer, Message, NULL, &Message_rect);
-		SDL_FreeSurface(surfaceMessage);
-		SDL_DestroyTexture(Message);
-		surfaceMessage = TTF_RenderText_Solid(ws.font, "Press 'W' to Jump", Black);
-		Message = SDL_CreateTextureFromSurface(ws.renderer, surfaceMessage);
-		Message_rect = { 700 - camera.x, 1150 - camera.y, 300, 50 };
-		SDL_RenderCopyF(ws.renderer, Message, NULL, &Message_rect);
-		SDL_FreeSurface(surfaceMessage); 
-		SDL_DestroyTexture(Message);     
-		surfaceMessage = TTF_RenderText_Solid(ws.font, "Avoid These", Black);
-		Message = SDL_CreateTextureFromSurface(ws.renderer, surfaceMessage);
-		Message_rect = { 700 - camera.x, 1450 - camera.y, 300, 50 };
-		SDL_RenderCopyF(ws.renderer, Message, NULL, &Message_rect);
-		SDL_FreeSurface(surfaceMessage);
-		SDL_DestroyTexture(Message);     
-		surfaceMessage = TTF_RenderText_Solid(ws.font, "Press 'W' while in Air", Black);
-		Message = SDL_CreateTextureFromSurface(ws.renderer, surfaceMessage);
-		Message_rect = { 1475 - camera.x, 1150 - camera.y, 300, 50 };
-		SDL_RenderCopyF(ws.renderer, Message, NULL, &Message_rect);
-		SDL_FreeSurface(surfaceMessage);
-		SDL_DestroyTexture(Message);     
-		surfaceMessage = TTF_RenderText_Solid(ws.font, "Rightclick to Hook", Black);
-		Message = SDL_CreateTextureFromSurface(ws.renderer, surfaceMessage);
-		Message_rect = {  1200 - camera.x, 850 - camera.y, 300, 50 };
-		SDL_RenderCopyF(ws.renderer, Message, NULL, &Message_rect);
-		SDL_FreeSurface(surfaceMessage);
-		SDL_DestroyTexture(Message);     
-		surfaceMessage = TTF_RenderText_Solid(ws.font, "You cant Hook Iron Objects", Black);
-		Message = SDL_CreateTextureFromSurface(ws.renderer, surfaceMessage);
-		Message_rect = { 875 - camera.x, 600 - camera.y, 300, 50 };
-		SDL_RenderCopyF(ws.renderer, Message, NULL, &Message_rect);
-		SDL_FreeSurface(surfaceMessage);
-		SDL_DestroyTexture(Message);     
-		surfaceMessage = TTF_RenderText_Solid(ws.font, "You can Hook Through here", Black);
-		Message = SDL_CreateTextureFromSurface(ws.renderer, surfaceMessage);
-		Message_rect = { 1475 - camera.x, 600 - camera.y, 300, 50 };
-		SDL_RenderCopyF(ws.renderer, Message, NULL, &Message_rect);
-		SDL_FreeSurface(surfaceMessage);
-		SDL_DestroyTexture(Message);     
-		surfaceMessage = TTF_RenderText_Solid(ws.font, "The Goal is to reach the Flag!", Black);
-		Message = SDL_CreateTextureFromSurface(ws.renderer, surfaceMessage);
-		Message_rect = { 900 - camera.x, 50 - camera.y, 300, 50 };
-		SDL_RenderCopyF(ws.renderer, Message, NULL, &Message_rect);
-		SDL_FreeSurface(surfaceMessage);
-		SDL_DestroyTexture(Message);     
+		setText(ws, "Press 'A' or 'D' to Walk", 200, 1150, 300, 50, Black);
+		setText(ws, "Press 'W' or 'Space' to Jump", 700, 1150, 300, 50, Black);
+		setText(ws, "Avoid These", 700, 1450, 300, 50, Black);
+		setText(ws, "Press 'w' or 'Space' while in Air", 1475, 1150, 300, 50, Black);
+		setText(ws, "Rightclick to Hook", 1200, 850, 300, 50, Black);
+		setText(ws, "You cant Hook Iron Objects", 875, 600, 300, 50, Black);
+		setText(ws, "You can Hook Through here", 1475, 600, 300, 50, Black);
+		setText(ws, "The Goal is to reach the Flag!", 900, 50, 300, 50, Black);
 	}
-	string deathText = "Deaths: " + to_string(ws.deaths);
-	SDL_Surface* deathMessage = TTF_RenderText_Solid(ws.font, deathText.c_str(), Black);
-	SDL_Texture* message = SDL_CreateTextureFromSurface(ws.renderer, deathMessage);
-	SDL_FRect death_rect = { 20, 10, 200, 50 };
-	SDL_RenderCopyF(ws.renderer, message, NULL, &death_rect);
-	SDL_FreeSurface(deathMessage);
-	SDL_DestroyTexture(message);
+	setText(ws, "Deaths: " + to_string(ws.deaths), 20, 50, 200, 50, Black);
 
 	SDL_Rect playerRect = { ws.player.x - camera.x, ws.player.y - camera.y, ws.player.w, ws.player.h };
 	SDL_Rect monkey = { 0 * 64, 6 * 64, 64, 64};
