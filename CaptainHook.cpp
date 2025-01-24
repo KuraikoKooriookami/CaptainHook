@@ -475,41 +475,45 @@ void mutateWorldState(WorldState& ws, vector<SDL_FRect_P>& obstacles, double del
 	vector2 hookPull = { 0,0 };
 	vector2 speedVector = { 0,0 };
 	velocity v;
-	if (ws.hookFlying && !ws.hookConnected && !ws.hookNoObstacleFound) {
-		vector2 direction = calculateDirection(ws.player, ws.hookGoal);
-		ws.hookPosition.x = ws.player.x + ws.player.w / 2 + (direction.x * ws.HOOKFLYINGSPEED * ws.amountOfHookTicks);// * deltaT;
-		ws.hookPosition.y = ws.player.y + ws.player.h / 2 + (direction.y * ws.HOOKFLYINGSPEED * ws.amountOfHookTicks);// * deltaT;
-		ws.amountOfHookTicks++;
-		SDL_FRect currentRect = { ws.hookPosition.x, ws.hookPosition.y, 1, 1 };
-		//calculate hook length
-		double hookLength = sqrt(pow(ws.hookPosition.x - ws.player.x + ws.player.w / 2, 2) + pow(ws.hookPosition.y - ws.player.y + ws.player.h / 2, 2));
-		if (hookLength > ws.MAXHOOKLENGTH) {
-			ws.hookFlying = false;
-			ws.hookNoObstacleFound = true;
-		}
-		else {
-			for (const auto& obstacle : obstacles) {
-				SDL_FRect obstacleRect = obstacle.rect;
-				if (SDL_HasIntersectionF(&currentRect, &obstacleRect)) {
-					if (obstacle.obstacleValue == UNHOOKABLE || obstacle.obstacleValue == SPIKEBALL) {
-						ws.hookNoObstacleFound = true;
+	for (int i = 0; i <= ws.HOOKFLYINGSPEED; i+=15) {
+		if (ws.hookFlying && !ws.hookConnected && !ws.hookNoObstacleFound ) {
+			vector2 direction = calculateDirection(ws.player, ws.hookGoal);
+			ws.hookPosition.x = ws.player.x + ws.player.w / 2 + (direction.x * i * ws.amountOfHookTicks);// * deltaT;
+			ws.hookPosition.y = ws.player.y + ws.player.h / 2 + (direction.y * i * ws.amountOfHookTicks);// * deltaT;
+			SDL_FRect currentRect = { ws.hookPosition.x, ws.hookPosition.y, 1, 1 };
+			//calculate hook length
+			double hookLength = sqrt(pow(ws.hookPosition.x - ws.player.x + ws.player.w / 2, 2) + pow(ws.hookPosition.y - ws.player.y + ws.player.h / 2, 2));
+			if (hookLength > ws.MAXHOOKLENGTH) {
+				ws.hookFlying = false;
+				ws.hookNoObstacleFound = true;
+			}
+			else {
+				for (const auto& obstacle : obstacles) {
+					SDL_FRect obstacleRect = obstacle.rect;
+					if (SDL_HasIntersectionF(&currentRect, &obstacleRect)) {
+						if (obstacle.obstacleValue == UNHOOKABLE || obstacle.obstacleValue == SPIKEBALL) {
+							ws.hookNoObstacleFound = true;
+							ws.hookFlying = false;
+							break;
+						}
+						if (obstacle.obstacleValue >= 28) {
+							continue;
+						}
+						ws.hookConnected = true;
 						ws.hookFlying = false;
+						ws.hookGoal = ws.hookPosition;
+						if (ws.playerVelocity.y * direction.y > 0)
+							ws.playerVelocity.y = ws.playerVelocity.y * 0.4;
+						if (ws.playerVelocity.x * direction.x > 0)
+							ws.playerVelocity.x = ws.playerVelocity.x * 0.75;
 						break;
 					}
-					if (obstacle.obstacleValue >= 28) {
-						continue;
-					}
-					ws.hookConnected = true;
-					ws.hookFlying = false;
-					ws.hookGoal = ws.hookPosition;
-					if (ws.playerVelocity.y * direction.y > 0)
-						ws.playerVelocity.y = ws.playerVelocity.y * 0.4;
-					if (ws.playerVelocity.x * direction.x > 0)
-						ws.playerVelocity.x = ws.playerVelocity.x * 0.75;
-					break;
 				}
 			}
 		}
+	}
+	if (ws.hookFlying) {
+		ws.amountOfHookTicks++;
 	}
 
 	if (ws.hookConnected) {
