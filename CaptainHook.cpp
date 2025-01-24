@@ -702,16 +702,16 @@ void renderGraphics(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 	SDL_RenderClear(ws.renderer);
 	if (ws.hookFlying || ws.hookConnected || !ws.hookNoObstacleFound) {
 		
-		float hookLength = sqrt(pow(ws.hookPosition.x - ws.player.x + ws.player.w / 2, 2) + pow(ws.hookPosition.y - ws.player.y + ws.player.h / 2, 2));
-		float angle = atan2(ws.hookGoal.y - ws.player.y, ws.hookGoal.x - ws.player.x) * 180 / M_PI;
+		float hookLength = sqrt(pow((ws.hookPosition.x-TILESIZE/2) - ws.player.x + ws.player.w / 2, 2) + pow((ws.hookPosition.y-TILESIZE/2) - ws.player.y + ws.player.h / 2, 2));
+		float angle = atan2((ws.hookGoal.y-TILESIZE/2) - ws.player.y, (ws.hookGoal.x-TILESIZE/2) - ws.player.x) * 180 / M_PI;
 		for (float i = hookLength; i > 0; i -= TILESIZE/2) {
 			if (i == hookLength){
-				SDL_Rect hookRect = { ws.player.x + ws.player.w / 4 + (ws.hookPosition.x - ws.player.x) * i / hookLength - camera.x, ws.player.y + ws.player.h / 4 + (ws.hookPosition.y - ws.player.y) * i / hookLength - camera.y, TILESIZE / 2, TILESIZE / 2 };
-				SDL_RenderCopyEx(ws.renderer, ws.hookTexture, &ws.spriteSheet[0][0], &hookRect, angle + 90, NULL, SDL_FLIP_NONE);
+				SDL_FRect hookRect = { ws.player.x + ws.player.w / 4 + ((ws.hookPosition.x - TILESIZE / 2) - ws.player.x) * i / hookLength - camera.x, ws.player.y + ws.player.h / 4 + ((ws.hookPosition.y-TILESIZE/2) - ws.player.y) * i / hookLength - camera.y, TILESIZE / 2, TILESIZE / 2 };
+				SDL_RenderCopyExF(ws.renderer, ws.hookTexture, &ws.spriteSheet[0][0], &hookRect, angle + 90, NULL, SDL_FLIP_NONE);
 			}
 			else {
-				SDL_Rect linkRect = { ws.player.x + ws.player.w / 4 + (ws.hookPosition.x - ws.player.x) * i / hookLength - camera.x, ws.player.y + ws.player.h / 4 + (ws.hookPosition.y - ws.player.y) * i / hookLength - camera.y, TILESIZE / 2, TILESIZE / 2 };
-				SDL_RenderCopyEx(ws.renderer, ws.linkTexture, &ws.spriteSheet[0][0], &linkRect, angle + 90, NULL, SDL_FLIP_NONE);
+				SDL_FRect linkRect = { ws.player.x + ws.player.w / 4 + ((ws.hookPosition.x - TILESIZE / 2) - ws.player.x) * i / hookLength - camera.x, ws.player.y + ws.player.h / 4 + ((ws.hookPosition.y - TILESIZE / 2) - ws.player.y) * i / hookLength - camera.y, TILESIZE / 2, TILESIZE / 2 };
+				SDL_RenderCopyExF(ws.renderer, ws.linkTexture, &ws.spriteSheet[0][0], &linkRect, angle + 90, NULL, SDL_FLIP_NONE);
 			}
 		}		
 	}
