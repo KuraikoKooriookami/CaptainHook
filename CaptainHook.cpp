@@ -475,7 +475,7 @@ void mutateWorldState(WorldState& ws, vector<SDL_FRect_P>& obstacles, double del
 	vector2 hookPull = { 0,0 };
 	vector2 speedVector = { 0,0 };
 	velocity v;
-	for (int i = 0; i <= ws.HOOKFLYINGSPEED; i+=15) {
+	for (int i = 0; i <= ws.HOOKFLYINGSPEED; i+=10) {
 		if (ws.hookFlying && !ws.hookConnected && !ws.hookNoObstacleFound ) {
 			vector2 direction = calculateDirection(ws.player, ws.hookGoal);
 			ws.hookPosition.x = ws.player.x + ws.player.w / 2 + (direction.x * i * ws.amountOfHookTicks);// * deltaT;
@@ -510,6 +510,9 @@ void mutateWorldState(WorldState& ws, vector<SDL_FRect_P>& obstacles, double del
 					}
 				}
 			}
+		}
+		else {
+			break;
 		}
 	}
 	if (ws.hookFlying) {
