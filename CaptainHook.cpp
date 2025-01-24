@@ -9,7 +9,7 @@
 #include <cmath>
 
 #define SCREEN_WIDTH 850 *1.5
-#define SCREEN_HEIGHT  600 *1.5
+#define SCREEN_HEIGHT  580 *1.5
 #define TILESIZE 32
 
 using namespace std;
@@ -516,7 +516,7 @@ void mutateWorldState(WorldState& ws, vector<SDL_FRect_P>& obstacles, double del
 		hookPull = calculateDirection(ws.player, ws.hookGoal);
 		if (hookPull.y < 0) {
 			//stronger pull upwards
-			speedVector.y += hookPull.y * 1.37;
+			speedVector.y += hookPull.y * 1.27;
 		}
 		else
 			speedVector.y += hookPull.y * 0.85;
@@ -673,10 +673,16 @@ void initSpriteSheet(WorldState& ws) {
 }
 
 
-void setText(WorldState& ws, const string& text, float positionX, float positionY, float width, float height, SDL_Color color) {
+void setText(WorldState& ws, const string& text, float positionX, float positionY, float width, float height, SDL_Color color, bool addCameraOffset) {
 	SDL_Surface* surfaceMessage = TTF_RenderText_Solid(ws.font, text.c_str(), color);
 	SDL_Texture* Message = SDL_CreateTextureFromSurface(ws.renderer, surfaceMessage);
-	SDL_FRect Message_rect = { positionX - camera.x, positionY - camera.y, width, height };
+	SDL_FRect Message_rect;
+	if (addCameraOffset) {
+		Message_rect = { positionX - camera.x, positionY - camera.y, width, height };
+	}
+	else {
+		Message_rect = { positionX, positionY, width, height };
+	}
 	SDL_RenderCopyF(ws.renderer, Message, NULL, &Message_rect);
 	SDL_FreeSurface(surfaceMessage);
 	SDL_DestroyTexture(Message);
@@ -730,16 +736,16 @@ void renderGraphics(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 
 	if (ws.stage == 1)
 	{
-		setText(ws, "Press 'A' or 'D' to Walk", 200, 1150, 300, 50, Black);
-		setText(ws, "Press 'W' or 'Space' to Jump", 700, 1150, 300, 50, Black);
-		setText(ws, "Avoid These", 700, 1450, 300, 50, Black);
-		setText(ws, "Press 'w' or 'Space' while in Air", 1475, 1150, 300, 50, Black);
-		setText(ws, "Rightclick to Hook", 1200, 850, 300, 50, Black);
-		setText(ws, "You cant Hook Iron Objects", 875, 600, 300, 50, Black);
-		setText(ws, "You can Hook Through here", 1475, 600, 300, 50, Black);
-		setText(ws, "The Goal is to reach the Flag!", 900, 50, 300, 50, Black);
+		setText(ws, "Press 'A' or 'D' to Walk", 200, 1150, 300, 50, Black, true);
+		setText(ws, "Press 'W' or 'Space' to Jump", 700, 1150, 300, 50, Black, true);
+		setText(ws, "Avoid These", 700, 1450, 300, 50, Black, true);
+		setText(ws, "Press 'w' or 'Space' while in Air", 1475, 1150, 300, 50, Black, true);
+		setText(ws, "Rightclick to Hook", 1200, 850, 300, 50, Black, true);
+		setText(ws, "You cant Hook Iron Objects", 875, 600, 300, 50, Black, true);
+		setText(ws, "You can Hook Through here", 1475, 600, 300, 50, Black, true);
+		setText(ws, "The Goal is to reach the Flag!", 900, 50, 300, 50, Black, true);
 	}
-	setText(ws, "Deaths: " + to_string(ws.deaths), 20, 50, 200, 50, Black);
+	setText(ws, "Deaths: " + to_string(ws.deaths), 20, 50, 200, 50, Black, false);
 
 	SDL_Rect playerRect = { ws.player.x - camera.x, ws.player.y - camera.y, ws.player.w, ws.player.h };
 	SDL_Rect monkey = { 0 * 64, 6 * 64, 64, 64};
