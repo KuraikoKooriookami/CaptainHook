@@ -29,6 +29,14 @@ struct vector2 {
 		return *this;
 	}
 };
+struct Achievements {
+	int id;
+	string message;
+	int progress;
+	int goal;
+	int RemainingDisplayTime;
+	bool unlocked;
+};
 
 struct SDL_FRect_P {
 	SDL_FRect rect;
@@ -90,6 +98,7 @@ struct velocity {
 	double JUMP = 12;
 	double GRAVITY = 0.5;
 	double SLIDING = 0.87;
+	double AIRSLIDING = 0.95;
 	double MOVEMENTACCELERATION = 0.5;
 };
 
@@ -507,7 +516,7 @@ void mutateWorldState(WorldState& ws, vector<SDL_FRect_P>& obstacles, double del
 		hookPull = calculateDirection(ws.player, ws.hookGoal);
 		if (hookPull.y < 0) {
 			//stronger pull upwards
-			speedVector.y += hookPull.y * 1.25;
+			speedVector.y += hookPull.y * 1.37;
 		}
 		else
 			speedVector.y += hookPull.y * 0.85;
@@ -542,7 +551,7 @@ void mutateWorldState(WorldState& ws, vector<SDL_FRect_P>& obstacles, double del
 	else {
 		if (!ws.hookConnected) {
 			if (!ws.ground) {
-				ws.playerVelocity.x *= v.SLIDING * 1.1;
+				ws.playerVelocity.x *= v.AIRSLIDING;
 
 			}
 			else {
