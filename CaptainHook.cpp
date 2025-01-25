@@ -46,10 +46,6 @@ struct WorldState {
 	TTF_Font* font;
 	SDL_Texture* hookTexture;
 	SDL_Texture* linkTexture;
-	SDL_Texture* rodTexture;
-	SDL_Texture* flagTexture;
-	SDL_Texture* spikeTexture;
-	SDL_Texture* playerTexture;
 	SDL_FRect player = { 0*TILESIZE, 0*TILESIZE, TILESIZE, TILESIZE };
 	SDL_FRect hurtbox = { 0 * TILESIZE, 0 * TILESIZE, 16, 16 };
 	SDL_FPoint hookGoal = { 0, 0 };
