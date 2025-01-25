@@ -7,6 +7,7 @@
 #include <string>
 #include <SDL_ttf.h>
 #include <cmath>
+#include <SDL_mixer.h>
 
 #define SCREEN_WIDTH 850 *1.5
 #define SCREEN_HEIGHT  580 *1.5
@@ -14,6 +15,7 @@
 
 using namespace std;
 extern "C"
+bool isRunning = true;
 
 struct vector2 {
 	float x, y;    
@@ -72,13 +74,14 @@ struct WorldState {
 	int messageTimer = 250;
 	string achievementMessage = "";
 	bool showAchievement = false;
+	Mix_Chunk* soundEffect;
 };
 
 struct {
 	int x;
 	int y;
 }
-	spawnLocation;
+spawnLocation;
 
 struct {
 	float x;
@@ -234,6 +237,10 @@ void drawObstacle(const WorldState& ws, SDL_FRect destRect,int obstacleValue)
 
 void getMap(WorldState& ws, const string& level)
 {
+	if (ws.stage == 3) {
+		ws.achievementMessage = "Achievement Unlocked: You Completed the Game";
+		ws.showAchievement = true;
+	}
 	cout << "Loading level file: " << level << endl;
 	ifstream file(level);
 	string line;
@@ -275,6 +282,19 @@ void getMap(WorldState& ws, const string& level)
 	else {
 		cerr << "No file: " << level << " found" << endl;
 	}
+}
+
+void playSound(WorldState& ws,string path) {
+	string basePath = "sound/";
+	string soundPath = basePath + path;
+	ifstream file(soundPath);
+	ws.soundEffect = Mix_LoadWAV(soundPath.c_str());
+	char* base_path = SDL_GetBasePath();
+	if (!ws.soundEffect) {
+		std::cerr << "Failed to load sound effect: " << Mix_GetError() << std::endl;
+		return;
+	}
+	Mix_PlayChannel(-1, ws.soundEffect, 0);
 }
 
 void loadLevelAndDraw(WorldState& ws, vector<SDL_FRect_P>& obstacles)
@@ -368,6 +388,15 @@ void initWorldState(WorldState& ws) {
 		printf("Keine Texture gefunden");
 		exit(0);
 	}
+	if (SDL_Init(SDL_INIT_AUDIO) < 0) {
+		printf("Failed to initialize SDL: %s\n", SDL_GetError());
+		exit(0);
+	}
+
+	if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
+		printf("Failed to initialize SDL_mixer: %s\n", Mix_GetError());
+		exit(0);
+	}
 	string file = string(basePath) + "/levels/map" + to_string(ws.stage) + ".txt";
 	getMap(ws, file);
 	loadLevelAndDraw(ws, obstacles);
@@ -410,10 +439,7 @@ void readEvents(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 	}
 
 	if (state[SDL_SCANCODE_LCTRL] && state[SDL_SCANCODE_C]) {
-		SDL_DestroyWindow(ws.window);
-		SDL_DestroyRenderer(ws.renderer);
-		SDL_Quit();
-		exit(0);
+		isRunning = false;
 	}
 
 	if (state[SDL_SCANCODE_LCTRL] && state[SDL_SCANCODE_D]) {
@@ -423,6 +449,7 @@ void readEvents(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 	while (SDL_PollEvent(&event)){
 		if (event.type == SDL_KEYDOWN && (event.key.keysym.scancode == SDL_SCANCODE_W || event.key.keysym.scancode == SDL_SCANCODE_SPACE)) {
 			if (ws.jumps == 1) {
+				playSound(ws, "dblJump.wav");
 				ws.jumps = 2;
 				ws.ground = false;
 				ws.playerVelocity.y = v.JUMP * -1;
@@ -490,11 +517,13 @@ void mutateWorldState(WorldState& ws, vector<SDL_FRect_P>& obstacles, double del
 						if (obstacle.obstacleValue == UNHOOKABLE || obstacle.obstacleValue == SPIKEBALL) {
 							ws.hookNoObstacleFound = true;
 							ws.hookFlying = false;
+							playSound(ws, "leadhook.wav");
 							break;
 						}
 						if (obstacle.obstacleValue >= 28) {
 							continue;
 						}
+						playSound(ws, "hook.wav");
 						ws.hookConnected = true;
 						ws.hookFlying = false;
 						ws.hookGoal = ws.hookPosition;
@@ -614,6 +643,7 @@ void mutateWorldState(WorldState& ws, vector<SDL_FRect_P>& obstacles, double del
 		if (SDL_HasIntersectionF(&ws.hurtbox, &obstacleRect)) {
 			if (obstacle.obstacleValue == SPIKEBALL || obstacle.obstacleValue == USPEAR_TIP || obstacle.obstacleValue == RSPEAR_TIP || obstacle.obstacleValue == DSPEAR_TIP || obstacle.obstacleValue == LSPEAR_TIP) {
 				ws.deaths++;
+				playSound(ws, "died.wav");
 				if (ws.deaths == 10 || ws.deaths == 100) {
 					ws.achievementMessage = "Achievement Unlocked: You died " + to_string(ws.deaths) + " times!";
 					ws.showAchievement = true;
@@ -660,6 +690,7 @@ void mutateWorldState(WorldState& ws, vector<SDL_FRect_P>& obstacles, double del
 		if (SDL_HasIntersectionF(&ws.hurtbox, &obstacleRect)) {
 			if (obstacle.obstacleValue == SPIKEBALL || obstacle.obstacleValue == USPEAR_TIP || obstacle.obstacleValue == RSPEAR_TIP || obstacle.obstacleValue == DSPEAR_TIP || obstacle.obstacleValue == LSPEAR_TIP) {
 				ws.deaths++;
+				playSound(ws, "died.wav");
 				if (ws.deaths == 10 || ws.deaths == 100) {
 					ws.achievementMessage = "Achievement Unlocked: You died " + to_string(ws.deaths) + " times!";
 					ws.showAchievement = true;
@@ -783,7 +814,7 @@ int main(int argc, char* args[])
 	double deltaT = 0;
 
 
-	while (true) {
+	while (isRunning) {
 		/*LAST = NOW;
 		NOW = SDL_GetPerformanceCounter();
 
@@ -795,8 +826,8 @@ int main(int argc, char* args[])
 	}
 
 	SDL_DestroyTexture(worldState.texture);
-	SDL_DestroyTexture(worldState.textureText);
 	SDL_DestroyRenderer(worldState.renderer);
+	Mix_CloseAudio();
 	IMG_Quit();
 	SDL_Quit();
 	return 0;
