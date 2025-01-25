@@ -29,14 +29,6 @@ struct vector2 {
 		return *this;
 	}
 };
-struct Achievements {
-	int id;
-	string message;
-	int progress;
-	int goal;
-	int RemainingDisplayTime;
-	bool unlocked;
-};
 
 struct SDL_FRect_P {
 	SDL_FRect rect;
@@ -77,6 +69,9 @@ struct WorldState {
 	int jumps = 0;
 	double maxMovement = 0;
 	int deaths = 0;
+	int messageTimer = 250;
+	string achievementMessage = "";
+	bool showAchievement = false;
 };
 
 struct {
@@ -471,6 +466,7 @@ void handle_camera(WorldState& ws) {
 	}*/
 }
 
+
 void mutateWorldState(WorldState& ws, vector<SDL_FRect_P>& obstacles, double deltaT) {
 	vector2 hookPull = { 0,0 };
 	vector2 speedVector = { 0,0 };
@@ -618,6 +614,10 @@ void mutateWorldState(WorldState& ws, vector<SDL_FRect_P>& obstacles, double del
 		if (SDL_HasIntersectionF(&ws.hurtbox, &obstacleRect)) {
 			if (obstacle.obstacleValue == SPIKEBALL || obstacle.obstacleValue == USPEAR_TIP || obstacle.obstacleValue == RSPEAR_TIP || obstacle.obstacleValue == DSPEAR_TIP || obstacle.obstacleValue == LSPEAR_TIP) {
 				ws.deaths++;
+				if (ws.deaths == 10 || ws.deaths == 100) {
+					ws.achievementMessage = "Achievement Unlocked: You died " + to_string(ws.deaths) + " times!";
+					ws.showAchievement = true;
+				}
 				resetPlayer(ws);
 			}
 		}
@@ -660,6 +660,10 @@ void mutateWorldState(WorldState& ws, vector<SDL_FRect_P>& obstacles, double del
 		if (SDL_HasIntersectionF(&ws.hurtbox, &obstacleRect)) {
 			if (obstacle.obstacleValue == SPIKEBALL || obstacle.obstacleValue == USPEAR_TIP || obstacle.obstacleValue == RSPEAR_TIP || obstacle.obstacleValue == DSPEAR_TIP || obstacle.obstacleValue == LSPEAR_TIP) {
 				ws.deaths++;
+				if (ws.deaths == 10 || ws.deaths == 100) {
+					ws.achievementMessage = "Achievement Unlocked: You died " + to_string(ws.deaths) + " times!";
+					ws.showAchievement = true;
+				}
 				resetPlayer(ws);
 			}
 		}
@@ -701,19 +705,19 @@ void renderGraphics(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 	SDL_SetRenderDrawColor(ws.renderer, 89, 181, 226, 0);
 	SDL_RenderClear(ws.renderer);
 	if (ws.hookFlying || ws.hookConnected || !ws.hookNoObstacleFound) {
-		
-		float hookLength = sqrt(pow((ws.hookPosition.x-TILESIZE/2) - ws.player.x + ws.player.w / 2, 2) + pow((ws.hookPosition.y-TILESIZE/2) - ws.player.y + ws.player.h / 2, 2));
-		float angle = atan2((ws.hookGoal.y-TILESIZE/2) - ws.player.y, (ws.hookGoal.x-TILESIZE/2) - ws.player.x) * 180 / M_PI;
-		for (float i = hookLength; i > 0; i -= TILESIZE/2) {
-			if (i == hookLength){
-				SDL_FRect hookRect = { ws.player.x + ws.player.w / 4 + ((ws.hookPosition.x - TILESIZE / 2) - ws.player.x) * i / hookLength - camera.x, ws.player.y + ws.player.h / 4 + ((ws.hookPosition.y-TILESIZE/2) - ws.player.y) * i / hookLength - camera.y, TILESIZE / 2, TILESIZE / 2 };
+
+		float hookLength = sqrt(pow((ws.hookPosition.x - TILESIZE / 2) - ws.player.x + ws.player.w / 2, 2) + pow((ws.hookPosition.y - TILESIZE / 2) - ws.player.y + ws.player.h / 2, 2));
+		float angle = atan2((ws.hookGoal.y - TILESIZE / 2) - ws.player.y, (ws.hookGoal.x - TILESIZE / 2) - ws.player.x) * 180 / M_PI;
+		for (float i = hookLength; i > 0; i -= TILESIZE / 2) {
+			if (i == hookLength) {
+				SDL_FRect hookRect = { ws.player.x + ws.player.w / 4 + ((ws.hookPosition.x - TILESIZE / 2) - ws.player.x) * i / hookLength - camera.x, ws.player.y + ws.player.h / 4 + ((ws.hookPosition.y - TILESIZE / 2) - ws.player.y) * i / hookLength - camera.y, TILESIZE / 2, TILESIZE / 2 };
 				SDL_RenderCopyExF(ws.renderer, ws.hookTexture, &ws.spriteSheet[0][0], &hookRect, angle + 90, NULL, SDL_FLIP_NONE);
 			}
 			else {
 				SDL_FRect linkRect = { ws.player.x + ws.player.w / 4 + ((ws.hookPosition.x - TILESIZE / 2) - ws.player.x) * i / hookLength - camera.x, ws.player.y + ws.player.h / 4 + ((ws.hookPosition.y - TILESIZE / 2) - ws.player.y) * i / hookLength - camera.y, TILESIZE / 2, TILESIZE / 2 };
 				SDL_RenderCopyExF(ws.renderer, ws.linkTexture, &ws.spriteSheet[0][0], &linkRect, angle + 90, NULL, SDL_FLIP_NONE);
 			}
-		}		
+		}
 	}
 
 
@@ -733,7 +737,7 @@ void renderGraphics(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 				SDL_FRect rect = rect_p.rect;
 				rect.x -= camera.x;
 				rect.y -= camera.y;
-				
+
 				if (rect.x + rect.w > 0 && rect.x < SCREEN_WIDTH && rect.y + rect.h > 0 && rect.y < SCREEN_HEIGHT) {
 					drawObstacle(ws, rect, ws.map[row][col]);
 				}
@@ -752,7 +756,15 @@ void renderGraphics(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 		setText(ws, "You can Hook Through here", 1475, 600, 300, 50, Black, true);
 		setText(ws, "The Goal is to reach the Flag!", 900, 50, 300, 50, Black, true);
 	}
-	setText(ws, "Deaths: " + to_string(ws.deaths), 20, 50, 200, 50, Black, false);
+	setText(ws, "Deaths: " + to_string(ws.deaths), 20, 40, 200, 50, Black, false);
+	if (ws.showAchievement){
+		if (ws.messageTimer == 0) {
+			ws.showAchievement = false;
+			ws.messageTimer = 250;
+		}
+		setText(ws, ws.achievementMessage, 20, 800, 500, 50, Black, false);
+		ws.messageTimer--;
+	}
 
 	SDL_Rect playerRect = { ws.player.x - camera.x, ws.player.y - camera.y, ws.player.w, ws.player.h };
 	SDL_Rect monkey = { 0 * 64, 6 * 64, 64, 64};
