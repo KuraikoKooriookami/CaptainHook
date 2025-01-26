@@ -85,6 +85,8 @@ struct WorldState {
 	Mix_Chunk* soundEffect;
 	vector<Enemy> enemies;
 	int enemyAmount = 0;
+	bool cameraToggle = false;
+	bool isFKeyPressed = false;
 };
 
 struct {
@@ -380,7 +382,7 @@ void initWorldState(WorldState& ws) {
 
 	string basePath = SDL_GetBasePath();
 	basePath = basePath + "../../";
-	string texturePath = basePath + "/Images/SpriteSheet_Copy.png";
+	string texturePath = basePath + "/Images/SpriteSheet.png";
 	string monkeyPath = basePath + "/Images/MonkeBad.png";
 	string texturePathHook = basePath + "/Images/hook.png";
 	string texturePathChain = basePath + "/Images/link.png";
@@ -471,9 +473,11 @@ void readEvents(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 		isRunning = false;
 	}
 
-	if (state[SDL_SCANCODE_LCTRL] && state[SDL_SCANCODE_D]) {
+	if (state[SDL_SCANCODE_LCTRL] && state[SDL_SCANCODE_R]) {
 		resetPlayer(ws);
 	}
+
+
 
 	while (SDL_PollEvent(&event)){
 		if (event.type == SDL_KEYDOWN && (event.key.keysym.scancode == SDL_SCANCODE_W || event.key.keysym.scancode == SDL_SCANCODE_SPACE)) {
@@ -506,12 +510,31 @@ void readEvents(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 			ws.maxHookDuration = 50;
 			ws.amountOfHookTicks = 1;
 		}
+		if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_F) {
+			if (!ws.isFKeyPressed) {
+				ws.cameraToggle = !ws.cameraToggle;
+				ws.isFKeyPressed = true;
+			}
+		}
+		if (event.type == SDL_KEYUP && event.key.keysym.scancode == SDL_SCANCODE_F) {
+			ws.isFKeyPressed = false; 
+		}
 	}
+}
+
+void getMousePosition(int& mouseX, int& mouseY) {
+	SDL_GetMouseState(&mouseX, &mouseY);
 }
 
 void handle_camera(WorldState& ws) {
 	camera.x = (ws.player.x + ws.player.w / 2) - SCREEN_WIDTH  /  2;
 	camera.y = (ws.player.y + ws.player.h / 2) - SCREEN_HEIGHT / 2;
+	if (ws.cameraToggle) {
+		int mouseX, mouseY;
+		getMousePosition(mouseX, mouseY);
+		camera.x += mouseX - (SCREEN_WIDTH / 2);
+		camera.y += mouseY - (SCREEN_HEIGHT / 2);
+	}
 	
 	/*if (camera.x < 0)
 	{
@@ -990,6 +1013,10 @@ void renderGraphics(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 
 	SDL_Rect playerRect = { ws.player.x - camera.x, ws.player.y - camera.y, ws.player.w, ws.player.h };
 	SDL_Rect monkey = { 0 * 64, 6 * 64, 64, 64};
+	if (ws.jumps == 2) {
+		monkey.x = 3 * 64;
+	}
+
 	SDL_RenderCopy(ws.renderer, ws.texture, &monkey, &playerRect);
 	SDL_RenderPresent(ws.renderer);
 	
