@@ -74,6 +74,7 @@ struct WorldState {
 	float MAXHOOKLENGTH = 350;
 	float HOOKFLYINGSPEED = 35;
 	float HOOKSTRENGTH = 1.45;
+	int maxHookDuration = 50;
 	bool ground = false;
 	int jumps = 0;
 	double maxMovement = 0;
@@ -368,6 +369,7 @@ void resetPlayer(WorldState& ws) {
 	ws.respawn = false;
 	ws.hookConnected = false;
 	ws.hookNoObstacleFound = true;
+	ws.maxHookDuration = 50;
 	ws.hookFlying = false;
 	ws.hookEnemy = false;
 }
@@ -501,6 +503,7 @@ void readEvents(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 			ws.hookNoObstacleFound = true;
 			ws.hookConnected = false;
 			ws.hookEnemy = 0;
+			ws.maxHookDuration = 50;
 			ws.amountOfHookTicks = 1;
 		}
 	}
@@ -545,6 +548,7 @@ void checkEnemyCollision(WorldState& ws, vector<SDL_FRect_P>& obstacles) {
 			SDL_FRect_P* o = getObstacleByEnemyId(obstacles, enemy.enemyID);
 			if (abs(enemy.enemyVelocity.x) < 0.5)
 				enemy.enemyVelocity.x = 0;
+			enemy.enemyVelocity.x *= v.AIRSLIDING;
 			enemy.enemyVelocity.y += v.GRAVITY;
 			enemy.enemyVelocity.x = SDL_clamp(enemy.enemyVelocity.x, -v.MAXSPEED, v.MAXSPEED);
 			enemy.enemyVelocity.y = SDL_clamp(enemy.enemyVelocity.y, -v.MAXSPEED, v.MAXSPEED);
@@ -571,6 +575,7 @@ void checkEnemyCollision(WorldState& ws, vector<SDL_FRect_P>& obstacles) {
 							ws.map[enemy.initialPosition.y][enemy.initialPosition.x] = 60;
 							if (enemy.enemyID == ws.hookEnemy) {
 								ws.hookEnemy = 0;
+								ws.maxHookDuration = 50;
 							}
 							playSound(ws, "died.wav");
 							return true;
@@ -612,6 +617,7 @@ void checkEnemyCollision(WorldState& ws, vector<SDL_FRect_P>& obstacles) {
 							}
 							if (enemy.enemyID == ws.hookEnemy) {
 								ws.hookEnemy = 0;
+								ws.maxHookDuration = 50;
 							}
 							ws.map[enemy.initialPosition.y][enemy.initialPosition.x] = 60;
 							playSound(ws, "died.wav");
@@ -745,8 +751,8 @@ void mutateWorldState(WorldState& ws, vector<SDL_FRect_P>& obstacles, double del
 	vector2 hookPull = { 0,0 };
 	vector2 speedVector = { 0,0 };
 	velocity v;
-	for (int i = 0; i <= ws.HOOKFLYINGSPEED; i+=7) {
-		if (ws.hookFlying && !ws.hookConnected && !ws.hookNoObstacleFound ) {
+	for (int i = 0; i <= ws.HOOKFLYINGSPEED; i += 7) {
+		if (ws.hookFlying && !ws.hookConnected && !ws.hookNoObstacleFound) {
 			vector2 direction = calculateDirection(ws.player, ws.hookGoal);
 			ws.hookPosition.x = ws.player.x + ws.player.w / 2 + (direction.x * i * ws.amountOfHookTicks);// * deltaT;
 			ws.hookPosition.y = ws.player.y + ws.player.h / 2 + (direction.y * i * ws.amountOfHookTicks);// * deltaT;
@@ -821,7 +827,8 @@ void mutateWorldState(WorldState& ws, vector<SDL_FRect_P>& obstacles, double del
 	if (ws.hookEnemy > 0) {
 		Enemy* e = getEnemyByID(ws.enemies, ws.hookEnemy);
 		if (e) {
-			vector2 enemyPull = calculateDirection(e->enemyRect, { ws.player.x + ws.player.w / 2, ws.player.y + ws.player.h/2 });
+			ws.maxHookDuration--;
+			vector2 enemyPull = calculateDirection(e->enemyRect, { ws.player.x + ws.player.w / 2, ws.player.y + ws.player.h / 2 });
 			if (enemyPull.y < 0) {
 				//stronger pull upwards
 				e->enemyVelocity.y += enemyPull.y * 1.27;
@@ -830,7 +837,11 @@ void mutateWorldState(WorldState& ws, vector<SDL_FRect_P>& obstacles, double del
 				e->enemyVelocity.y += enemyPull.y * 0.85;
 			e->enemyVelocity.x += enemyPull.x * 1.2;
 			//slower pull for enemies
-			e->enemyVelocity.x *= ws.HOOKSTRENGTH/1.7;
+			e->enemyVelocity.x *= ws.HOOKSTRENGTH / 1.7;
+		}
+		if (ws.maxHookDuration == 0){
+			ws.maxHookDuration = 50;
+			ws.hookEnemy = 0;
 		}
 	}
 
