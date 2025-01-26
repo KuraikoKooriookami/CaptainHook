@@ -1033,14 +1033,16 @@ int main(int argc, char* args[])
 
 
 	while (isRunning) {
-		/*LAST = NOW;
-		NOW = SDL_GetPerformanceCounter();
-
-		deltaT = (double)((NOW - LAST) * 1000 / (double)SDL_GetPerformanceFrequency());*/
+		
+		Uint64 start = SDL_GetPerformanceCounter();
+		
 		readEvents(worldState, obstacles);
 		mutateWorldState(worldState, obstacles, deltaT);
 		handle_camera(worldState);
 		renderGraphics(worldState, obstacles);
+	Uint64 end = SDL_GetPerformanceCounter();
+	float passedTime = (end / start) / ((float)SDL_GetPerformanceFrequency() * 1000.0f);
+	SDL_Delay(floor(16.666f - passedTime));
 	}
 
 	SDL_DestroyTexture(worldState.texture);
