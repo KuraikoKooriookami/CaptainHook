@@ -55,7 +55,6 @@ struct WorldState {
 	TTF_Font* font;
 	SDL_Texture* hookTexture;
 	SDL_Texture* linkTexture;
-	SDL_Texture* Monkey;
 	SDL_Texture* playermonke;
 	SDL_FRect player = { 0*TILESIZE, 0*TILESIZE, TILESIZE, TILESIZE };
 	SDL_FRect hurtbox = { 0 * TILESIZE, 0 * TILESIZE, 16, 16 };
@@ -63,7 +62,7 @@ struct WorldState {
 	SDL_FPoint hookPosition = { 0, 0 };
 	SDL_Rect spriteSheet[16][12] = { 0, 0, TILESIZE , TILESIZE };
 	vector<vector<int>>  map;
-	int stage = 1;
+	int stage = 2;
 	vector2 playerVelocity = { 0, 0 };
 	vector2 appliedForce = { 0, 0 };
 	bool hookFlying = false;
@@ -157,8 +156,8 @@ enum obstacleID { //UDLR = Directions, C = curved
 	PLAYER = 42,
 	FINISH_ROD = 43,
 	FINISH_FLAG = 44,
+	MONKAS = 46,
 	EMPTYREPLACEMENT = 60,
-	MONKAS = 77,
 };
 
 vector<SDL_FRect_P> obstacles;
@@ -248,7 +247,7 @@ void drawObstacle(const WorldState& ws, SDL_FRect destRect,int obstacleValue)
 	case(FINISH_FLAG):
 		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[2][6], &destRect); break;
 	case(MONKAS):
-		SDL_RenderCopyF(ws.renderer, ws.Monkey, &ws.spriteSheet[0][0], &destRect); break;
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[4][6], &destRect); break;
 	default:
 		break;
 	}
@@ -334,7 +333,7 @@ void loadLevelAndDraw(WorldState& ws, vector<SDL_FRect_P>& obstacles)
 				ws.hurtbox.y = ws.player.y + 4;
 				continue;
 			}
-			if (ws.map[row][col] == 77) {
+			if (ws.map[row][col] == 46) {
 				ws.enemyAmount++;
 				Enemy newEnemy;
 				newEnemy.enemyRect = { (float)col * TILESIZE, (float)row * TILESIZE, TILESIZE, TILESIZE };
@@ -352,7 +351,7 @@ void loadLevelAndDraw(WorldState& ws, vector<SDL_FRect_P>& obstacles)
 						TILESIZE
 					},
 					value,
-					value == 77 ? ws.enemyAmount : 0
+					value == 46 ? ws.enemyAmount : 0
 				};
 				SDL_FRect rect = rect_p.rect;
 				if (obstacles.empty() || obstacles.back().rect.x != rect.x || obstacles.back().rect.y != rect.y) {
@@ -395,7 +394,6 @@ void initWorldState(WorldState& ws) {
 	ws.texture = IMG_LoadTexture(ws.renderer, texturePath.c_str());
 	ws.hookTexture = IMG_LoadTexture(ws.renderer, texturePathHook.c_str());
 	ws.linkTexture = IMG_LoadTexture(ws.renderer, texturePathChain.c_str());
-	ws.Monkey = IMG_LoadTexture(ws.renderer, monkeyPath.c_str());
 	ws.playermonke = IMG_LoadTexture(ws.renderer, texturePath.c_str());
 
 	SDL_Init(SDL_INIT_EVERYTHING);
@@ -700,7 +698,7 @@ void checkPlayerCollision(WorldState& ws, vector<SDL_FRect_P>& obstacles) {
 					ws.ground = false;
 					ws.playerVelocity.y = 0;
 				}
-				if (obstacle.obstacleValue >= 43 && obstacle.obstacleValue != 60 && obstacle.obstacleValue != 77) {
+				if (obstacle.obstacleValue >= 43 && obstacle.obstacleValue != 60 && obstacle.obstacleValue != 46) {
 					if (obstacle.obstacleValue == FINISH_FLAG || obstacle.obstacleValue == FINISH_ROD) {
 						ws.stage++;
 						string basePath = SDL_GetBasePath();
@@ -748,7 +746,7 @@ void checkPlayerCollision(WorldState& ws, vector<SDL_FRect_P>& obstacles) {
 						ws.playerVelocity.x = 0;
 					}
 				}
-				if (obstacle.obstacleValue >= 43 && obstacle.obstacleValue != 60 && obstacle.obstacleValue != 77) {
+				if (obstacle.obstacleValue >= 43 && obstacle.obstacleValue != 60 && obstacle.obstacleValue != 46) {
 					if (obstacle.obstacleValue == FINISH_FLAG || obstacle.obstacleValue == FINISH_ROD) {
 						ws.stage++;
 						string basePath = SDL_GetBasePath();
@@ -805,7 +803,7 @@ void mutateWorldState(WorldState& ws, vector<SDL_FRect_P>& obstacles, double del
 							playSound(ws, "leadhook.wav");
 							break;
 						}
-						if (obstacle.obstacleValue == 77) {
+						if (obstacle.obstacleValue == 46) {
 							ws.hookEnemy = obstacle.enemyId;
 							ws.hookGoal = ws.hookPosition;
 							playSound(ws, "hook.wav");
@@ -1033,6 +1031,10 @@ void renderGraphics(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 		}
 		setText(ws, ws.achievementMessage, 20, 800, 500, 50, Black, false);
 		ws.messageTimer--;
+	}
+	if (ws.stage == 2) {
+		setText(ws, "Move and quickly grab above you", 200, 50, 300, 50, Black, true);
+		setText(ws, "Can't see? Try pressing 'F'", 900, 400, 300, 50, Black, true);
 	}
 
 	SDL_Rect playerRect = { ws.player.x - camera.x, ws.player.y - camera.y, ws.player.w, ws.player.h };
