@@ -35,6 +35,15 @@ struct vector2 {
 struct SDL_FRect_P {
 	SDL_FRect rect;
 	int obstacleValue;
+	int enemyId;
+};
+
+class Enemy {
+public:
+	SDL_FRect enemyRect;
+	vector2 enemyVelocity = { 0, 0 };
+	int enemyID;
+	SDL_Point initialPosition;
 };
 
 struct WorldState {
@@ -46,6 +55,7 @@ struct WorldState {
 	TTF_Font* font;
 	SDL_Texture* hookTexture;
 	SDL_Texture* linkTexture;
+	SDL_Texture* Monkey;
 	SDL_FRect player = { 0*TILESIZE, 0*TILESIZE, TILESIZE, TILESIZE };
 	SDL_FRect hurtbox = { 0 * TILESIZE, 0 * TILESIZE, 16, 16 };
 	SDL_FPoint hookGoal = { 0, 0 };
@@ -59,10 +69,11 @@ struct WorldState {
 	bool hookConnected = false;
 	bool hookNoObstacleFound = true;
 	bool respawn = false;
+	int hookEnemy = 0;
 	int amountOfHookTicks = 1;
 	float MAXHOOKLENGTH = 350;
 	float HOOKFLYINGSPEED = 35;
-	float HOOKSTRENGTH = 1.75;
+	float HOOKSTRENGTH = 1.45;
 	bool ground = false;
 	int jumps = 0;
 	double maxMovement = 0;
@@ -71,6 +82,8 @@ struct WorldState {
 	string achievementMessage = "";
 	bool showAchievement = false;
 	Mix_Chunk* soundEffect;
+	vector<Enemy> enemies;
+	int enemyAmount = 0;
 };
 
 struct {
@@ -138,6 +151,8 @@ enum obstacleID { //UDLR = Directions, C = curved
 	PLAYER = 42,
 	FINISH_ROD = 43,
 	FINISH_FLAG = 44,
+	EMPTYREPLACEMENT = 60,
+	MONKAS = 77,
 };
 
 vector<SDL_FRect_P> obstacles;
@@ -149,6 +164,7 @@ void drawObstacle(const WorldState& ws, SDL_FRect destRect,int obstacleValue)
 	destRect.y = ceil(destRect.y);
 	switch (obstacle) {
 	case (NOTSET):
+	case(EMPTYREPLACEMENT):
 	case (EMPTY):
 		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[0][0], &destRect);    break; //done
 	case (EARTH):
@@ -225,6 +241,8 @@ void drawObstacle(const WorldState& ws, SDL_FRect destRect,int obstacleValue)
 		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[1][6], &destRect); break;
 	case(FINISH_FLAG):
 		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[2][6], &destRect); break;
+	case(MONKAS):
+		SDL_RenderCopyF(ws.renderer, ws.Monkey, &ws.spriteSheet[0][0], &destRect); break;
 	default:
 		break;
 	}
@@ -266,7 +284,6 @@ void getMap(WorldState& ws, const string& level)
 					{
 						int value = stoi(number);
 						rowData.push_back(value);
-
 					}
 				}
 			}
@@ -295,6 +312,8 @@ void playSound(WorldState& ws,string path) {
 
 void loadLevelAndDraw(WorldState& ws, vector<SDL_FRect_P>& obstacles)
 {
+	ws.enemies.clear();
+	ws.enemyAmount = 0;
 	obstacles.clear();
 	for (int row = 0; row < ws.map.size(); row++){
 		for (int col = 0; col < ws.map[row].size(); col++){
@@ -309,6 +328,14 @@ void loadLevelAndDraw(WorldState& ws, vector<SDL_FRect_P>& obstacles)
 				ws.hurtbox.y = ws.player.y + 4;
 				continue;
 			}
+			if (ws.map[row][col] == 77) {
+				ws.enemyAmount++;
+				Enemy newEnemy;
+				newEnemy.enemyRect = { (float)col * TILESIZE, (float)row * TILESIZE, TILESIZE, TILESIZE };
+				newEnemy.enemyID = ws.enemyAmount;
+				newEnemy.initialPosition = { col, row };
+				ws.enemies.push_back(newEnemy);
+			}
 
 			if (value > 0) {
 				SDL_FRect_P rect_p = {
@@ -318,7 +345,8 @@ void loadLevelAndDraw(WorldState& ws, vector<SDL_FRect_P>& obstacles)
 						TILESIZE,
 						TILESIZE
 					},
-					value
+					value,
+					value == 77 ? ws.enemyAmount : 0
 				};
 				SDL_FRect rect = rect_p.rect;
 				if (obstacles.empty() || obstacles.back().rect.x != rect.x || obstacles.back().rect.y != rect.y) {
@@ -341,6 +369,7 @@ void resetPlayer(WorldState& ws) {
 	ws.hookConnected = false;
 	ws.hookNoObstacleFound = true;
 	ws.hookFlying = false;
+	ws.hookEnemy = false;
 }
 
 void initWorldState(WorldState& ws) {
@@ -350,12 +379,14 @@ void initWorldState(WorldState& ws) {
 	string basePath = SDL_GetBasePath();
 	basePath = basePath + "../../";
 	string texturePath = basePath + "/Images/SpriteSheet_Copy.png";
+	string monkeyPath = basePath + "/Images/MonkeBad.png";
 	string texturePathHook = basePath + "/Images/hook.png";
 	string texturePathChain = basePath + "/Images/link.png";
 	string fontPath = basePath + "/monogram.ttf";
 	ws.texture = IMG_LoadTexture(ws.renderer, texturePath.c_str());
 	ws.hookTexture = IMG_LoadTexture(ws.renderer, texturePathHook.c_str());
 	ws.linkTexture = IMG_LoadTexture(ws.renderer, texturePathChain.c_str());
+	ws.Monkey = IMG_LoadTexture(ws.renderer, monkeyPath.c_str());
 
 	SDL_Init(SDL_INIT_EVERYTHING);
 	SDL_Init(IMG_INIT_PNG);
@@ -455,7 +486,6 @@ void readEvents(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 				ws.jumps = 1;
 				ws.playerVelocity.y = v.JUMP * -1;
 			}
-			//ws.playerVelocity.y = v.JUMP * -1;
 		}
 		if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_RIGHT) 
 		{
@@ -470,6 +500,7 @@ void readEvents(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 			ws.hookFlying = false;
 			ws.hookNoObstacleFound = true;
 			ws.hookConnected = false;
+			ws.hookEnemy = 0;
 			ws.amountOfHookTicks = 1;
 		}
 	}
@@ -489,12 +520,232 @@ void handle_camera(WorldState& ws) {
 	}*/
 }
 
+Enemy* getEnemyByID(vector<Enemy>& enemies, int id) {
+	for (auto& e : enemies) {
+		if (e.enemyID == id) {
+			return &e;
+		}
+	}
+	return nullptr;
+}
+
+SDL_FRect_P* getObstacleByEnemyId(vector<SDL_FRect_P>& obstacles, int enemyId) {
+	for (auto& o : obstacles) {
+		if (o.enemyId == enemyId) {
+			return &o;
+		}
+	}
+	return nullptr;
+}
+
+void checkEnemyCollision(WorldState& ws, vector<SDL_FRect_P>& obstacles) {
+	velocity v;
+	ws.enemies.erase(
+		std::remove_if(ws.enemies.begin(), ws.enemies.end(), [&](Enemy& enemy) {
+			SDL_FRect_P* o = getObstacleByEnemyId(obstacles, enemy.enemyID);
+			if (abs(enemy.enemyVelocity.x) < 0.5)
+				enemy.enemyVelocity.x = 0;
+			enemy.enemyVelocity.y += v.GRAVITY;
+			enemy.enemyVelocity.x = SDL_clamp(enemy.enemyVelocity.x, -v.MAXSPEED, v.MAXSPEED);
+			enemy.enemyVelocity.y = SDL_clamp(enemy.enemyVelocity.y, -v.MAXSPEED, v.MAXSPEED);
+			enemy.enemyRect.y += enemy.enemyVelocity.y;
+			for (const auto& obstacle : obstacles) {
+				SDL_FRect obstacleRect = obstacle.rect;
+				if (SDL_HasIntersectionF(&enemy.enemyRect, &obstacleRect)) {
+					if (obstacle.obstacleValue != SPIKEBALL && obstacle.obstacleValue != USPEAR_TIP && obstacle.obstacleValue != RSPEAR_TIP && obstacle.obstacleValue != DSPEAR_TIP && obstacle.obstacleValue != LSPEAR_TIP && obstacle.obstacleValue != MONKAS) {
+						if (enemy.enemyVelocity.y > 0) {
+							enemy.enemyRect.y = obstacleRect.y - enemy.enemyRect.h;
+							enemy.enemyVelocity.y = 0;
+						}
+						else {
+							enemy.enemyRect.y = obstacleRect.y + obstacleRect.h;
+							enemy.enemyVelocity.y = 0;
+						}
+					}
+					else {
+						if (obstacle.obstacleValue != MONKAS) {
+							if (o) {
+								o->obstacleValue = 60;
+								o->enemyId = 0;
+							}
+							ws.map[enemy.initialPosition.y][enemy.initialPosition.x] = 60;
+							if (enemy.enemyID == ws.hookEnemy) {
+								ws.hookEnemy = 0;
+							}
+							playSound(ws, "died.wav");
+							return true;
+						}
+					}
+				}
+			}
+			if (SDL_HasIntersectionF(&enemy.enemyRect, &ws.player)) {
+				if (enemy.enemyVelocity.y > 0) {
+					enemy.enemyRect.y = ws.player.y - enemy.enemyRect.h;
+					enemy.enemyVelocity.y = 0;
+				}
+				else {
+					enemy.enemyRect.y = ws.player.y + ws.player.h;
+					enemy.enemyVelocity.y = 0;
+				}
+			}
+			enemy.enemyRect.x += enemy.enemyVelocity.x;
+			for (const auto& obstacle : obstacles) {
+				SDL_FRect obstacleRect = obstacle.rect;
+				if (SDL_HasIntersectionF(&enemy.enemyRect, &obstacleRect)) {
+					if (obstacle.obstacleValue != SPIKEBALL && obstacle.obstacleValue != USPEAR_TIP && obstacle.obstacleValue != RSPEAR_TIP && obstacle.obstacleValue != DSPEAR_TIP && obstacle.obstacleValue != LSPEAR_TIP && obstacle.obstacleValue != MONKAS) {
+						if (enemy.enemyVelocity.x > 0) {
+							enemy.enemyRect.x = obstacleRect.x - enemy.enemyRect.w;
+							enemy.enemyVelocity.x = 0;
+						}
+						else {
+							if (enemy.enemyVelocity.x < 0) {
+								enemy.enemyRect.x = obstacleRect.x + obstacleRect.w;
+								enemy.enemyVelocity.x = 0;
+							}
+						}
+					}
+					else {
+						if (obstacle.obstacleValue != MONKAS) {
+							if (o) {
+								o->obstacleValue = 60;
+								o->enemyId = 0;
+							}
+							if (enemy.enemyID == ws.hookEnemy) {
+								ws.hookEnemy = 0;
+							}
+							ws.map[enemy.initialPosition.y][enemy.initialPosition.x] = 60;
+							playSound(ws, "died.wav");
+							return true;
+						}
+					}
+				}
+			}
+			if (SDL_HasIntersectionF(&enemy.enemyRect, &ws.player)) {
+				if (enemy.enemyVelocity.x > 0) {
+					enemy.enemyRect.x = ws.player.x - enemy.enemyRect.w;
+					enemy.enemyVelocity.x = 0;
+				}
+				else {
+					enemy.enemyRect.x = ws.player.x + ws.player.w;
+					enemy.enemyVelocity.x = 0;
+				}
+			}
+			if (o) {
+				o->rect = enemy.enemyRect;
+			}
+			return false;
+			}),
+		ws.enemies.end()
+	);
+}
+
+void checkPlayerCollision(WorldState& ws, vector<SDL_FRect_P>& obstacles) {
+
+	ws.player.y += ws.playerVelocity.y;
+	ws.hurtbox.y = ws.player.y + 4;
+
+	if (ws.playerVelocity.y != 0 && ws.ground == true) {
+		ws.jumps = 1;
+		ws.ground = false;
+	}
+
+	for (const auto& obstacle : obstacles) {
+		SDL_FRect obstacleRect = obstacle.rect;
+		if (SDL_HasIntersectionF(&ws.player, &obstacleRect)) {
+			if (obstacle.obstacleValue != SPIKEBALL && obstacle.obstacleValue != USPEAR_TIP && obstacle.obstacleValue != RSPEAR_TIP && obstacle.obstacleValue != DSPEAR_TIP && obstacle.obstacleValue != LSPEAR_TIP && obstacle.obstacleValue != EMPTYREPLACEMENT) {
+				if (ws.playerVelocity.y > 0) {
+					ws.player.y = obstacleRect.y - ws.player.h;
+					ws.hurtbox.y = ws.player.y + 4;
+					ws.ground = true;
+					ws.jumps = 0;
+					ws.playerVelocity.y = 0;
+				}
+				else {
+					ws.player.y = obstacleRect.y + obstacleRect.h;
+					ws.hurtbox.y = ws.player.y + 4;
+					ws.ground = false;
+					ws.playerVelocity.y = 0;
+				}
+				if (obstacle.obstacleValue >= 43 && obstacle.obstacleValue != 60 && obstacle.obstacleValue != 77) {
+					if (obstacle.obstacleValue == FINISH_FLAG || obstacle.obstacleValue == FINISH_ROD) {
+						ws.stage++;
+						string basePath = SDL_GetBasePath();
+						basePath = basePath + "../../";
+						string file = string(basePath) + "/levels/map" + to_string(ws.stage) + ".txt";
+						ws.map.clear();
+						getMap(ws, file);
+						loadLevelAndDraw(ws, obstacles);
+					}
+					resetPlayer(ws);
+					break;
+				}
+			}
+		}
+		if (SDL_HasIntersectionF(&ws.hurtbox, &obstacleRect)) {
+			if (obstacle.obstacleValue == SPIKEBALL || obstacle.obstacleValue == USPEAR_TIP || obstacle.obstacleValue == RSPEAR_TIP || obstacle.obstacleValue == DSPEAR_TIP || obstacle.obstacleValue == LSPEAR_TIP) {
+				ws.deaths++;
+				playSound(ws, "died.wav");
+				if (ws.deaths == 10 || ws.deaths == 100) {
+					ws.achievementMessage = "Achievement Unlocked: You died " + to_string(ws.deaths) + " times!";
+					ws.showAchievement = true;
+				}
+				resetPlayer(ws);
+			}
+		}
+	}
+	ws.player.x += ws.playerVelocity.x;
+	ws.hurtbox.x = ws.player.x + 4;
+
+	for (const auto& obstacle : obstacles) {
+		SDL_FRect obstacleRect = obstacle.rect;
+		if (SDL_HasIntersectionF(&ws.player, &obstacleRect)) {
+			if (obstacle.obstacleValue != SPIKEBALL && obstacle.obstacleValue != USPEAR_TIP && obstacle.obstacleValue != RSPEAR_TIP && obstacle.obstacleValue != DSPEAR_TIP && obstacle.obstacleValue != LSPEAR_TIP && obstacle.obstacleValue != EMPTYREPLACEMENT) {
+				if (ws.playerVelocity.x > 0) {
+					ws.player.x = obstacleRect.x - ws.player.w;
+					ws.hurtbox.x = ws.player.x + 4;
+					ws.playerVelocity.x = 0;
+				}
+				else {
+					if (ws.playerVelocity.x < 0) {
+						ws.player.x = obstacleRect.x + obstacleRect.w;
+						ws.hurtbox.x = ws.player.x + 4;
+						ws.playerVelocity.x = 0;
+					}
+				}
+				if (obstacle.obstacleValue >= 43 && obstacle.obstacleValue != 60 && obstacle.obstacleValue != 77) {
+					if (obstacle.obstacleValue == FINISH_FLAG || obstacle.obstacleValue == FINISH_ROD) {
+						ws.stage++;
+						string basePath = SDL_GetBasePath();
+						basePath = basePath + "../../";
+						string file = string(basePath) + "/levels/map" + to_string(ws.stage) + ".txt";
+						ws.map.clear();
+						getMap(ws, file);
+						loadLevelAndDraw(ws, obstacles);
+					}
+					resetPlayer(ws);
+					break;
+				}
+			}
+		}
+		if (SDL_HasIntersectionF(&ws.hurtbox, &obstacleRect)) {
+			if (obstacle.obstacleValue == SPIKEBALL || obstacle.obstacleValue == USPEAR_TIP || obstacle.obstacleValue == RSPEAR_TIP || obstacle.obstacleValue == DSPEAR_TIP || obstacle.obstacleValue == LSPEAR_TIP) {
+				ws.deaths++;
+				playSound(ws, "died.wav");
+				if (ws.deaths == 10 || ws.deaths == 100) {
+					ws.achievementMessage = "Achievement Unlocked: You died " + to_string(ws.deaths) + " times!";
+					ws.showAchievement = true;
+				}
+				resetPlayer(ws);
+			}
+		}
+	}
+}
 
 void mutateWorldState(WorldState& ws, vector<SDL_FRect_P>& obstacles, double deltaT) {
 	vector2 hookPull = { 0,0 };
 	vector2 speedVector = { 0,0 };
 	velocity v;
-	for (int i = 0; i <= ws.HOOKFLYINGSPEED; i+=10) {
+	for (int i = 0; i <= ws.HOOKFLYINGSPEED; i+=7) {
 		if (ws.hookFlying && !ws.hookConnected && !ws.hookNoObstacleFound ) {
 			vector2 direction = calculateDirection(ws.player, ws.hookGoal);
 			ws.hookPosition.x = ws.player.x + ws.player.w / 2 + (direction.x * i * ws.amountOfHookTicks);// * deltaT;
@@ -514,6 +765,14 @@ void mutateWorldState(WorldState& ws, vector<SDL_FRect_P>& obstacles, double del
 							ws.hookNoObstacleFound = true;
 							ws.hookFlying = false;
 							playSound(ws, "leadhook.wav");
+							break;
+						}
+						if (obstacle.obstacleValue == 77) {
+							ws.hookEnemy = obstacle.enemyId;
+							ws.hookGoal = ws.hookPosition;
+							playSound(ws, "hook.wav");
+							ws.hookNoObstacleFound = true;
+							ws.hookFlying = false;
 							break;
 						}
 						if (obstacle.obstacleValue >= 28) {
@@ -559,6 +818,21 @@ void mutateWorldState(WorldState& ws, vector<SDL_FRect_P>& obstacles, double del
 
 		ws.playerVelocity += speedVector;
 	}
+	if (ws.hookEnemy > 0) {
+		Enemy* e = getEnemyByID(ws.enemies, ws.hookEnemy);
+		if (e) {
+			vector2 enemyPull = calculateDirection(e->enemyRect, { ws.player.x + ws.player.w / 2, ws.player.y + ws.player.h/2 });
+			if (enemyPull.y < 0) {
+				//stronger pull upwards
+				e->enemyVelocity.y += enemyPull.y * 1.27;
+			}
+			else
+				e->enemyVelocity.y += enemyPull.y * 0.85;
+			e->enemyVelocity.x += enemyPull.x * 1.2;
+			//slower pull for enemies
+			e->enemyVelocity.x *= ws.HOOKSTRENGTH/1.7;
+		}
+	}
 
 	//right movement
 	if (ws.maxMovement > 0) {
@@ -592,109 +866,12 @@ void mutateWorldState(WorldState& ws, vector<SDL_FRect_P>& obstacles, double del
 
 
 	ws.playerVelocity.y += v.GRAVITY;
-
 	ws.playerVelocity.x = SDL_clamp(ws.playerVelocity.x, -v.MAXSPEED, v.MAXSPEED);
 	ws.playerVelocity.y = SDL_clamp(ws.playerVelocity.y, -v.MAXSPEED, v.MAXSPEED);
+	
+	checkPlayerCollision(ws, obstacles);
+	checkEnemyCollision(ws, obstacles);
 
-	ws.player.y += ws.playerVelocity.y;
-	ws.hurtbox.y = ws.player.y + 4;
-
-	if (ws.playerVelocity.y != 0 && ws.ground == true) {
-		ws.jumps = 1;
-		ws.ground = false;
-	}
-
-	for (const auto& obstacle : obstacles) {
-		SDL_FRect obstacleRect = obstacle.rect;
-		if (SDL_HasIntersectionF(&ws.player, &obstacleRect)) {
-			if (obstacle.obstacleValue != SPIKEBALL && obstacle.obstacleValue != USPEAR_TIP && obstacle.obstacleValue != RSPEAR_TIP && obstacle.obstacleValue != DSPEAR_TIP && obstacle.obstacleValue != LSPEAR_TIP) {
-				if (ws.playerVelocity.y > 0) {
-					ws.player.y = obstacleRect.y - ws.player.h;
-					ws.hurtbox.y = ws.player.y + 4;
-					ws.ground = true;
-					ws.jumps = 0;
-					ws.playerVelocity.y = 0;
-				}
-				else {
-					ws.player.y = obstacleRect.y + obstacleRect.h;
-					ws.hurtbox.y = ws.player.y + 4;
-					ws.ground = false;
-					ws.playerVelocity.y = 0;
-				}
-				if (obstacle.obstacleValue >= 43) {
-					if (obstacle.obstacleValue == FINISH_FLAG || obstacle.obstacleValue == FINISH_ROD) {
-						ws.stage++;
-						string basePath = SDL_GetBasePath();
-						basePath = basePath + "../../";
-						string file = string(basePath) + "/levels/map" + to_string(ws.stage) + ".txt";
-						ws.map.clear();
-						getMap(ws, file);
-						loadLevelAndDraw(ws, obstacles);
-					}
-					resetPlayer(ws);
-					break;
-				}
-			}
-		}
-		if (SDL_HasIntersectionF(&ws.hurtbox, &obstacleRect)) {
-			if (obstacle.obstacleValue == SPIKEBALL || obstacle.obstacleValue == USPEAR_TIP || obstacle.obstacleValue == RSPEAR_TIP || obstacle.obstacleValue == DSPEAR_TIP || obstacle.obstacleValue == LSPEAR_TIP) {
-				ws.deaths++;
-				playSound(ws, "died.wav");
-				if (ws.deaths == 10 || ws.deaths == 100) {
-					ws.achievementMessage = "Achievement Unlocked: You died " + to_string(ws.deaths) + " times!";
-					ws.showAchievement = true;
-				}
-				resetPlayer(ws);
-			}
-		}
-	}
-
-	ws.player.x += ws.playerVelocity.x;
-	ws.hurtbox.x = ws.player.x + 4;
-
-	for (const auto& obstacle : obstacles) {
-		SDL_FRect obstacleRect = obstacle.rect;
-		if (SDL_HasIntersectionF(&ws.player, &obstacleRect)) {
-			if (obstacle.obstacleValue != SPIKEBALL && obstacle.obstacleValue != USPEAR_TIP && obstacle.obstacleValue != RSPEAR_TIP && obstacle.obstacleValue != DSPEAR_TIP && obstacle.obstacleValue != LSPEAR_TIP) {
-				if (ws.playerVelocity.x > 0) {
-					ws.player.x = obstacleRect.x - ws.player.w;
-					ws.hurtbox.x = ws.player.x + 4;
-					ws.playerVelocity.x = 0;
-				}
-				else {
-					if (ws.playerVelocity.x < 0) {
-						ws.player.x = obstacleRect.x + obstacleRect.w;
-						ws.hurtbox.x = ws.player.x + 4;
-						ws.playerVelocity.x = 0;
-					}
-				}
-				if (obstacle.obstacleValue >= 43) {
-					if (obstacle.obstacleValue == FINISH_FLAG || obstacle.obstacleValue == FINISH_ROD) {
-						ws.stage++;
-						string basePath = SDL_GetBasePath();
-						basePath = basePath + "../../";
-						string file = string(basePath) + "/levels/map" + to_string(ws.stage) + ".txt";
-						ws.map.clear();
-						getMap(ws, file);
-						loadLevelAndDraw(ws, obstacles);
-					}
-					resetPlayer(ws);
-					break;
-				}
-			}
-		}
-		if (SDL_HasIntersectionF(&ws.hurtbox, &obstacleRect)) {
-			if (obstacle.obstacleValue == SPIKEBALL || obstacle.obstacleValue == USPEAR_TIP || obstacle.obstacleValue == RSPEAR_TIP || obstacle.obstacleValue == DSPEAR_TIP || obstacle.obstacleValue == LSPEAR_TIP) {
-				ws.deaths++;
-				playSound(ws, "died.wav");
-				if (ws.deaths == 10 || ws.deaths == 100) {
-					ws.achievementMessage = "Achievement Unlocked: You died " + to_string(ws.deaths) + " times!";
-					ws.showAchievement = true;
-				}
-				resetPlayer(ws);
-			}
-		}
-	}
 }
 
 void initSpriteSheet(WorldState& ws) {
@@ -731,7 +908,14 @@ void renderGraphics(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 	SDL_Color Black = { 0, 0, 0, 0 };
 	SDL_SetRenderDrawColor(ws.renderer, 89, 181, 226, 0);
 	SDL_RenderClear(ws.renderer);
-	if (ws.hookFlying || ws.hookConnected || !ws.hookNoObstacleFound) {
+	if (ws.hookFlying || ws.hookConnected || !ws.hookNoObstacleFound || ws.hookEnemy > 0) {
+		if (ws.hookEnemy > 0) {
+			Enemy* e = getEnemyByID(ws.enemies, ws.hookEnemy);
+			if (e) {
+				ws.hookGoal = { e->enemyRect.x + e->enemyRect.w / 2, e->enemyRect.y + e->enemyRect.h / 2 };
+				ws.hookPosition = { e->enemyRect.x + e->enemyRect.w / 2, e->enemyRect.y + e->enemyRect.h / 2 };
+			}
+		}
 
 		float hookLength = sqrt(pow((ws.hookPosition.x - TILESIZE / 2) - ws.player.x + ws.player.w / 2, 2) + pow((ws.hookPosition.y - TILESIZE / 2) - ws.player.y + ws.player.h / 2, 2));
 		float angle = atan2((ws.hookGoal.y - TILESIZE / 2) - ws.player.y, (ws.hookGoal.x - TILESIZE / 2) - ws.player.x) * 180 / M_PI;
@@ -760,7 +944,6 @@ void renderGraphics(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 			if (tileValue > 0 && tileValue != 42) {
 				SDL_FRect_P rect_p = obstacles[i];
 				i++;
-
 				SDL_FRect rect = rect_p.rect;
 				rect.x -= camera.x;
 				rect.y -= camera.y;
@@ -782,6 +965,7 @@ void renderGraphics(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 		setText(ws, "You cant Hook Iron Objects", 875, 600, 300, 50, Black, true);
 		setText(ws, "You can Hook Through here", 1475, 600, 300, 50, Black, true);
 		setText(ws, "The Goal is to reach the Flag!", 900, 50, 300, 50, Black, true);
+		setText(ws, "You can grab and kill those!", 200, 50, 300, 50, Black, true);
 	}
 	setText(ws, "Deaths: " + to_string(ws.deaths), 20, 40, 200, 50, Black, false);
 	if (ws.showAchievement){
