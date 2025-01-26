@@ -56,6 +56,7 @@ struct WorldState {
 	SDL_Texture* hookTexture;
 	SDL_Texture* linkTexture;
 	SDL_Texture* Monkey;
+	SDL_Texture* playermonke;
 	SDL_FRect player = { 0*TILESIZE, 0*TILESIZE, TILESIZE, TILESIZE };
 	SDL_FRect hurtbox = { 0 * TILESIZE, 0 * TILESIZE, 16, 16 };
 	SDL_FPoint hookGoal = { 0, 0 };
@@ -68,7 +69,6 @@ struct WorldState {
 	bool hookFlying = false;
 	bool hookConnected = false;
 	bool hookNoObstacleFound = true;
-	bool respawn = false;
 	int hookEnemy = 0;
 	int amountOfHookTicks = 1;
 	float MAXHOOKLENGTH = 350;
@@ -87,6 +87,9 @@ struct WorldState {
 	int enemyAmount = 0;
 	bool cameraToggle = false;
 	bool isFKeyPressed = false;
+	bool isDead = false;
+	bool respawn = false;
+	int alpha =  255;
 };
 
 struct {
@@ -374,6 +377,8 @@ void resetPlayer(WorldState& ws) {
 	ws.maxHookDuration = 50;
 	ws.hookFlying = false;
 	ws.hookEnemy = false;
+	ws.isDead = false;
+	ws.alpha = 255;
 }
 
 void initWorldState(WorldState& ws) {
@@ -391,6 +396,7 @@ void initWorldState(WorldState& ws) {
 	ws.hookTexture = IMG_LoadTexture(ws.renderer, texturePathHook.c_str());
 	ws.linkTexture = IMG_LoadTexture(ws.renderer, texturePathChain.c_str());
 	ws.Monkey = IMG_LoadTexture(ws.renderer, monkeyPath.c_str());
+	ws.playermonke = IMG_LoadTexture(ws.renderer, texturePath.c_str());
 
 	SDL_Init(SDL_INIT_EVERYTHING);
 	SDL_Init(IMG_INIT_PNG);
@@ -449,23 +455,66 @@ void readEvents(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 	velocity v;
 	ws.appliedForce = { 0,0 };
 	double movement = 0;
-
-	if (!ws.ground) {
-		movement = v.AIRMOVEMENT;
-	}
-	else {
-		movement = v.GROUNDMOVEMENT;
-	}
-
-	if (state[SDL_SCANCODE_A]) {
-		ws.maxMovement = movement * -1;
-	}
-	else {
-		if (state[SDL_SCANCODE_D]) {
-			ws.maxMovement = movement;
+	if (!ws.isDead) {
+		if (!ws.ground) {
+			movement = v.AIRMOVEMENT;
 		}
 		else {
-			ws.maxMovement = 0;
+			movement = v.GROUNDMOVEMENT;
+		}
+
+		if (state[SDL_SCANCODE_A]) {
+			ws.maxMovement = movement * -1;
+		}
+		else {
+			if (state[SDL_SCANCODE_D]) {
+				ws.maxMovement = movement;
+			}
+			else {
+				ws.maxMovement = 0;
+			}
+		}
+
+		while (SDL_PollEvent(&event)) {
+			if (event.type == SDL_KEYDOWN && (event.key.keysym.scancode == SDL_SCANCODE_W || event.key.keysym.scancode == SDL_SCANCODE_SPACE)) {
+				if (ws.jumps == 1) {
+					playSound(ws, "dblJump.wav");
+					ws.jumps = 2;
+					ws.ground = false;
+					ws.playerVelocity.y = v.JUMP * -1;
+				}
+				else if (ws.jumps == 0) {
+					ws.ground = false;
+					ws.jumps = 1;
+					ws.playerVelocity.y = v.JUMP * -1;
+				}
+			}
+			if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_RIGHT)
+			{
+				ws.hookGoal.x = event.button.x + camera.x;
+				ws.hookGoal.y = event.button.y + camera.y;
+				ws.hookNoObstacleFound = false;
+				ws.hookFlying = true;
+				ws.hookConnected = false;
+				ws.amountOfHookTicks = 1;
+			}
+			if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_RIGHT) {
+				ws.hookFlying = false;
+				ws.hookNoObstacleFound = true;
+				ws.hookConnected = false;
+				ws.hookEnemy = 0;
+				ws.maxHookDuration = 50;
+				ws.amountOfHookTicks = 1;
+			}
+			if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_F) {
+				if (!ws.isFKeyPressed) {
+					ws.cameraToggle = !ws.cameraToggle;
+					ws.isFKeyPressed = true;
+				}
+			}
+			if (event.type == SDL_KEYUP && event.key.keysym.scancode == SDL_SCANCODE_F) {
+				ws.isFKeyPressed = false;
+			}
 		}
 	}
 
@@ -475,50 +524,6 @@ void readEvents(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 
 	if (state[SDL_SCANCODE_LCTRL] && state[SDL_SCANCODE_R]) {
 		resetPlayer(ws);
-	}
-
-
-
-	while (SDL_PollEvent(&event)){
-		if (event.type == SDL_KEYDOWN && (event.key.keysym.scancode == SDL_SCANCODE_W || event.key.keysym.scancode == SDL_SCANCODE_SPACE)) {
-			if (ws.jumps == 1) {
-				playSound(ws, "dblJump.wav");
-				ws.jumps = 2;
-				ws.ground = false;
-				ws.playerVelocity.y = v.JUMP * -1;
-			}
-			else if(ws.jumps == 0){
-				ws.ground = false;
-				ws.jumps = 1;
-				ws.playerVelocity.y = v.JUMP * -1;
-			}
-		}
-		if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_RIGHT) 
-		{
-			ws.hookGoal.x = event.button.x + camera.x;
-			ws.hookGoal.y = event.button.y + camera.y;
-			ws.hookNoObstacleFound = false;
-			ws.hookFlying = true;
-			ws.hookConnected = false;
-			ws.amountOfHookTicks = 1;
-		}
-		if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_RIGHT) {
-			ws.hookFlying = false;
-			ws.hookNoObstacleFound = true;
-			ws.hookConnected = false;
-			ws.hookEnemy = 0;
-			ws.maxHookDuration = 50;
-			ws.amountOfHookTicks = 1;
-		}
-		if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_F) {
-			if (!ws.isFKeyPressed) {
-				ws.cameraToggle = !ws.cameraToggle;
-				ws.isFKeyPressed = true;
-			}
-		}
-		if (event.type == SDL_KEYUP && event.key.keysym.scancode == SDL_SCANCODE_F) {
-			ws.isFKeyPressed = false; 
-		}
 	}
 }
 
@@ -712,13 +717,15 @@ void checkPlayerCollision(WorldState& ws, vector<SDL_FRect_P>& obstacles) {
 		}
 		if (SDL_HasIntersectionF(&ws.hurtbox, &obstacleRect)) {
 			if (obstacle.obstacleValue == SPIKEBALL || obstacle.obstacleValue == USPEAR_TIP || obstacle.obstacleValue == RSPEAR_TIP || obstacle.obstacleValue == DSPEAR_TIP || obstacle.obstacleValue == LSPEAR_TIP) {
-				ws.deaths++;
-				playSound(ws, "died.wav");
-				if (ws.deaths == 10 || ws.deaths == 100) {
-					ws.achievementMessage = "Achievement Unlocked: You died " + to_string(ws.deaths) + " times!";
-					ws.showAchievement = true;
+				if (!ws.isDead) {
+					ws.deaths++;
+					playSound(ws, "died.wav");
+					if (ws.deaths == 10 || ws.deaths == 100) {
+						ws.achievementMessage = "Achievement Unlocked: You died " + to_string(ws.deaths) + " times!";
+						ws.showAchievement = true;
+					}
+					ws.isDead = true;
 				}
-				resetPlayer(ws);
 			}
 		}
 	}
@@ -758,13 +765,15 @@ void checkPlayerCollision(WorldState& ws, vector<SDL_FRect_P>& obstacles) {
 		}
 		if (SDL_HasIntersectionF(&ws.hurtbox, &obstacleRect)) {
 			if (obstacle.obstacleValue == SPIKEBALL || obstacle.obstacleValue == USPEAR_TIP || obstacle.obstacleValue == RSPEAR_TIP || obstacle.obstacleValue == DSPEAR_TIP || obstacle.obstacleValue == LSPEAR_TIP) {
-				ws.deaths++;
-				playSound(ws, "died.wav");
-				if (ws.deaths == 10 || ws.deaths == 100) {
-					ws.achievementMessage = "Achievement Unlocked: You died " + to_string(ws.deaths) + " times!";
-					ws.showAchievement = true;
+				if (!ws.isDead) {
+					ws.deaths++;
+					playSound(ws, "died.wav");
+					if (ws.deaths == 10 || ws.deaths == 100) {
+						ws.achievementMessage = "Achievement Unlocked: You died " + to_string(ws.deaths) + " times!";
+						ws.showAchievement = true;
+					}
+					ws.isDead = true;
 				}
-				resetPlayer(ws);
 			}
 		}
 	}
@@ -905,7 +914,22 @@ void mutateWorldState(WorldState& ws, vector<SDL_FRect_P>& obstacles, double del
 	
 	checkPlayerCollision(ws, obstacles);
 	checkEnemyCollision(ws, obstacles);
+	if (ws.isDead){
+		ws.playerVelocity = { 0, 0 };
+		if (ws.alpha > 0) {
+			ws.alpha -= 6;
+		}
 
+		else {
+			SDL_Delay(20);
+			ws.isDead = false;
+			ws.respawn = true;
+		}
+	}
+	
+	if (ws.respawn) {
+		resetPlayer(ws);
+	}
 }
 
 void initSpriteSheet(WorldState& ws) {
@@ -1002,7 +1026,7 @@ void renderGraphics(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 		setText(ws, "You can grab and kill those!", 200, 50, 300, 50, Black, true);
 	}
 	setText(ws, "Deaths: " + to_string(ws.deaths), 20, 40, 200, 50, Black, false);
-	if (ws.showAchievement){
+	if (ws.showAchievement) {
 		if (ws.messageTimer == 0) {
 			ws.showAchievement = false;
 			ws.messageTimer = 250;
@@ -1012,12 +1036,13 @@ void renderGraphics(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 	}
 
 	SDL_Rect playerRect = { ws.player.x - camera.x, ws.player.y - camera.y, ws.player.w, ws.player.h };
-	SDL_Rect monkey = { 0 * 64, 6 * 64, 64, 64};
+	SDL_Rect monkey = { 0 * 64, 6 * 64, 64, 64 };
 	if (ws.jumps == 2) {
 		monkey.x = 3 * 64;
 	}
 
-	SDL_RenderCopy(ws.renderer, ws.texture, &monkey, &playerRect);
+	SDL_SetTextureAlphaMod(ws.playermonke, ws.alpha);
+	SDL_RenderCopy(ws.renderer, ws.playermonke, &monkey, &playerRect);
 	SDL_RenderPresent(ws.renderer);
 	
 }
