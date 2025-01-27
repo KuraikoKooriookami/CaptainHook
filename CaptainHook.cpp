@@ -62,7 +62,7 @@ struct WorldState {
 	SDL_FPoint hookPosition = { 0, 0 };
 	SDL_Rect spriteSheet[16][12] = { 0, 0, TILESIZE , TILESIZE };
 	vector<vector<int>>  map;
-	int stage = 2;
+	int stage = 1;
 	vector2 playerVelocity = { 0, 0 };
 	vector2 appliedForce = { 0, 0 };
 	bool hookFlying = false;
@@ -73,6 +73,7 @@ struct WorldState {
 	float MAXHOOKLENGTH = 350;
 	float HOOKFLYINGSPEED = 35;
 	float HOOKSTRENGTH = 1.45;
+	bool limitedHook = false;
 	int maxHookDuration = 50;
 	bool ground = false;
 	int jumps = 0;
@@ -136,6 +137,7 @@ enum obstacleID { //UDLR = Directions, C = curved
 	UR_GRASS,				//12
 	DLC_EARTH,				//19
 	DRC_EARTH,				//20
+	CRUMBLING,
 	DR_GRASS = 21,				
 	DL_GRASS = 22,				
 	D_EARTH = 23,					
@@ -210,6 +212,8 @@ void drawObstacle(const WorldState& ws, SDL_FRect destRect,int obstacleValue)
 		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[4][2], &destRect);    break;//done
 	case (DRC_EARTH):
 		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[5][2], &destRect);    break;//done
+	case (CRUMBLING):
+		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[6][2], &destRect);    break;//done
 	case (DR_GRASS):
 		SDL_RenderCopyF(ws.renderer, ws.texture, &ws.spriteSheet[0][3], &destRect);    break;
 	case (DL_GRASS):
@@ -373,6 +377,7 @@ void resetPlayer(WorldState& ws) {
 	ws.respawn = false;
 	ws.hookConnected = false;
 	ws.hookNoObstacleFound = true;
+	ws.limitedHook = false;
 	ws.maxHookDuration = 50;
 	ws.hookFlying = false;
 	ws.hookEnemy = false;
@@ -501,6 +506,7 @@ void readEvents(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 				ws.hookNoObstacleFound = true;
 				ws.hookConnected = false;
 				ws.hookEnemy = 0;
+				ws.limitedHook = false;
 				ws.maxHookDuration = 50;
 				ws.amountOfHookTicks = 1;
 			}
@@ -582,7 +588,7 @@ void checkEnemyCollision(WorldState& ws, vector<SDL_FRect_P>& obstacles) {
 			for (const auto& obstacle : obstacles) {
 				SDL_FRect obstacleRect = obstacle.rect;
 				if (SDL_HasIntersectionF(&enemy.enemyRect, &obstacleRect)) {
-					if (obstacle.obstacleValue != SPIKEBALL && obstacle.obstacleValue != USPEAR_TIP && obstacle.obstacleValue != RSPEAR_TIP && obstacle.obstacleValue != DSPEAR_TIP && obstacle.obstacleValue != LSPEAR_TIP && obstacle.obstacleValue != MONKAS) {
+					if (obstacle.obstacleValue != SPIKEBALL && obstacle.obstacleValue != USPEAR_TIP && obstacle.obstacleValue != RSPEAR_TIP && obstacle.obstacleValue != DSPEAR_TIP && obstacle.obstacleValue != LSPEAR_TIP && obstacle.obstacleValue != MONKAS && obstacle.obstacleValue != EMPTYREPLACEMENT) {
 						if (enemy.enemyVelocity.y > 0) {
 							enemy.enemyRect.y = obstacleRect.y - enemy.enemyRect.h;
 							enemy.enemyVelocity.y = 0;
@@ -593,7 +599,7 @@ void checkEnemyCollision(WorldState& ws, vector<SDL_FRect_P>& obstacles) {
 						}
 					}
 					else {
-						if (obstacle.obstacleValue != MONKAS) {
+						if (obstacle.obstacleValue != MONKAS && obstacle.obstacleValue != EMPTYREPLACEMENT) {
 							if (o) {
 								o->obstacleValue = 60;
 								o->enemyId = 0;
@@ -623,7 +629,7 @@ void checkEnemyCollision(WorldState& ws, vector<SDL_FRect_P>& obstacles) {
 			for (const auto& obstacle : obstacles) {
 				SDL_FRect obstacleRect = obstacle.rect;
 				if (SDL_HasIntersectionF(&enemy.enemyRect, &obstacleRect)) {
-					if (obstacle.obstacleValue != SPIKEBALL && obstacle.obstacleValue != USPEAR_TIP && obstacle.obstacleValue != RSPEAR_TIP && obstacle.obstacleValue != DSPEAR_TIP && obstacle.obstacleValue != LSPEAR_TIP && obstacle.obstacleValue != MONKAS) {
+					if (obstacle.obstacleValue != SPIKEBALL && obstacle.obstacleValue != USPEAR_TIP && obstacle.obstacleValue != RSPEAR_TIP && obstacle.obstacleValue != DSPEAR_TIP && obstacle.obstacleValue != LSPEAR_TIP && obstacle.obstacleValue != MONKAS && obstacle.obstacleValue != EMPTYREPLACEMENT) {
 						if (enemy.enemyVelocity.x > 0) {
 							enemy.enemyRect.x = obstacleRect.x - enemy.enemyRect.w;
 							enemy.enemyVelocity.x = 0;
@@ -636,7 +642,7 @@ void checkEnemyCollision(WorldState& ws, vector<SDL_FRect_P>& obstacles) {
 						}
 					}
 					else {
-						if (obstacle.obstacleValue != MONKAS) {
+						if (obstacle.obstacleValue != MONKAS && obstacle.obstacleValue != EMPTYREPLACEMENT) {
 							if (o) {
 								o->obstacleValue = 60;
 								o->enemyId = 0;
@@ -806,6 +812,7 @@ void mutateWorldState(WorldState& ws, vector<SDL_FRect_P>& obstacles, double del
 						if (obstacle.obstacleValue == 46) {
 							ws.hookEnemy = obstacle.enemyId;
 							ws.hookGoal = ws.hookPosition;
+							ws.limitedHook = true;
 							playSound(ws, "hook.wav");
 							ws.hookNoObstacleFound = true;
 							ws.hookFlying = false;
@@ -813,6 +820,9 @@ void mutateWorldState(WorldState& ws, vector<SDL_FRect_P>& obstacles, double del
 						}
 						if (obstacle.obstacleValue >= 28) {
 							continue;
+						}
+						if (obstacle.obstacleValue == 20) {
+							ws.limitedHook = true;
 						}
 						playSound(ws, "hook.wav");
 						ws.hookConnected = true;
@@ -857,7 +867,6 @@ void mutateWorldState(WorldState& ws, vector<SDL_FRect_P>& obstacles, double del
 	if (ws.hookEnemy > 0) {
 		Enemy* e = getEnemyByID(ws.enemies, ws.hookEnemy);
 		if (e) {
-			ws.maxHookDuration--;
 			vector2 enemyPull = calculateDirection(e->enemyRect, { ws.player.x + ws.player.w / 2, ws.player.y + ws.player.h / 2 });
 			if (enemyPull.y < 0) {
 				//stronger pull upwards
@@ -869,9 +878,15 @@ void mutateWorldState(WorldState& ws, vector<SDL_FRect_P>& obstacles, double del
 			//slower pull for enemies
 			e->enemyVelocity.x *= ws.HOOKSTRENGTH / 1.7;
 		}
-		if (ws.maxHookDuration == 0){
+	}
+	if (ws.limitedHook) {
+		ws.maxHookDuration--;
+		if (ws.maxHookDuration == 0) {
 			ws.maxHookDuration = 50;
+			ws.hookConnected = false;
+			ws.limitedHook = false;
 			ws.hookEnemy = 0;
+			ws.hookNoObstacleFound = true;
 		}
 	}
 
@@ -1035,6 +1050,8 @@ void renderGraphics(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 	if (ws.stage == 2) {
 		setText(ws, "Move and quickly grab above you", 200, 50, 300, 50, Black, true);
 		setText(ws, "Can't see? Try pressing 'F'", 900, 400, 300, 50, Black, true);
+		setText(ws, "You can hold on to these only temporary", 1100, 1400, 400, 50, Black, true);
+		setText(ws, "Enjoy!", 700, 750, 300, 50, Black, true);
 	}
 
 	SDL_Rect playerRect = { ws.player.x - camera.x, ws.player.y - camera.y, ws.player.w, ws.player.h };
