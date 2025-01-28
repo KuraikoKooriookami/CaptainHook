@@ -79,6 +79,7 @@ struct WorldState {
 	int jumps = 0;
 	double maxMovement = 0;
 	int deaths = 0;
+	int killed = 0;
 	int messageTimer = 250;
 	string achievementMessage = "";
 	bool showAchievement = false;
@@ -163,6 +164,7 @@ enum obstacleID { //UDLR = Directions, C = curved
 };
 
 vector<SDL_FRect_P> obstacles;
+vector<SDL_FRect_P> obstaclesSorted;
 
 void drawObstacle(const WorldState& ws, SDL_FRect destRect,int obstacleValue)
 {
@@ -260,7 +262,7 @@ void drawObstacle(const WorldState& ws, SDL_FRect destRect,int obstacleValue)
 
 void getMap(WorldState& ws, const string& level)
 {
-	if (ws.stage == 3) {
+	if (ws.stage == 5) {
 		ws.achievementMessage = "Achievement Unlocked: You Completed the Game";
 		ws.showAchievement = true;
 	}
@@ -365,6 +367,7 @@ void loadLevelAndDraw(WorldState& ws, vector<SDL_FRect_P>& obstacles)
 			}
 		}
 	}
+	obstaclesSorted.clear();
 }
 
 void resetPlayer(WorldState& ws) {
@@ -608,6 +611,20 @@ void checkEnemyCollision(WorldState& ws, vector<SDL_FRect_P>& obstacles) {
 							if (enemy.enemyID == ws.hookEnemy) {
 								ws.hookEnemy = 0;
 								ws.maxHookDuration = 50;
+							}
+
+							if (ws.killed == 1 || ws.killed == 5 || ws.killed == 10 || ws.killed == 17) {
+								if (ws.killed == 1)
+									ws.achievementMessage = "Achievement Unlocked: You killed your First enemy!";
+								else {
+									if (ws.killed == 17) {
+										ws.achievementMessage = "Achievement Unlocked: You killed all the enemies!";
+									}
+									else {
+										ws.achievementMessage = "Achievement Unlocked: You killed " + to_string(ws.killed) + " enemies!";
+									}
+								}
+								ws.showAchievement = true;
 							}
 							playSound(ws, "died.wav");
 							return true;
