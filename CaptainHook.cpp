@@ -669,6 +669,20 @@ void checkEnemyCollision(WorldState& ws, vector<SDL_FRect_P>& obstacles) {
 								ws.maxHookDuration = 50;
 							}
 							ws.map[enemy.initialPosition.y][enemy.initialPosition.x] = 60;
+
+							if (ws.killed == 1 || ws.killed == 5 || ws.killed == 10 || ws.killed == 17) {
+								if (ws.killed == 1)
+									ws.achievementMessage = "Achievement Unlocked: You killed your First enemy!";
+								else {
+									if (ws.killed == 17) {
+										ws.achievementMessage = "Achievement Unlocked: You killed all the enemies!";
+									}
+									else {
+										ws.achievementMessage = "Achievement Unlocked: You killed " + to_string(ws.killed) + " enemies!";
+									}
+								}
+								ws.showAchievement = true;
+							}
 							playSound(ws, "died.wav");
 							return true;
 						}
