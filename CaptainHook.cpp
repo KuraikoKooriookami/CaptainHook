@@ -319,6 +319,7 @@ void playSound(WorldState& ws,string path) {
 		return;
 	}
 	Mix_PlayChannel(-1, ws.soundEffect, 0);
+
 }
 
 void loadLevelAndDraw(WorldState& ws, vector<SDL_FRect_P>& obstacles)
@@ -490,6 +491,7 @@ void readEvents(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 					ws.playerVelocity.y = v.JUMP * -1;
 				}
 				else if (ws.jumps == 0) {
+					playSound(ws, "Jump.wav");
 					ws.ground = false;
 					ws.jumps = 1;
 					ws.playerVelocity.y = v.JUMP * -1;
