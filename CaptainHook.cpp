@@ -1,6 +1,6 @@
 ﻿#include <SDL.h>
-#include<vector> 
-#include<SDL_image.h>
+#include <vector> 
+#include <SDL_image.h>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -10,7 +10,7 @@
 #include <SDL_mixer.h>
 
 #define SCREEN_WIDTH 850 *1.5
-#define SCREEN_HEIGHT  580 *1.5
+#define SCREEN_HEIGHT 550 *1.5
 #define TILESIZE 32
 
 using namespace std;
@@ -609,6 +609,7 @@ void checkEnemyCollision(WorldState& ws, vector<SDL_FRect_P>& obstacles) {
 								o->obstacleValue = 60;
 								o->enemyId = 0;
 							}
+							ws.killed++;
 							ws.map[enemy.initialPosition.y][enemy.initialPosition.x] = 60;
 							if (enemy.enemyID == ws.hookEnemy) {
 								ws.hookEnemy = 0;
@@ -666,11 +667,26 @@ void checkEnemyCollision(WorldState& ws, vector<SDL_FRect_P>& obstacles) {
 								o->obstacleValue = 60;
 								o->enemyId = 0;
 							}
+							ws.killed++;
 							if (enemy.enemyID == ws.hookEnemy) {
 								ws.hookEnemy = 0;
 								ws.maxHookDuration = 50;
 							}
 							ws.map[enemy.initialPosition.y][enemy.initialPosition.x] = 60;
+
+							if (ws.killed == 1 || ws.killed == 5 || ws.killed == 10 || ws.killed == 17) {
+								if (ws.killed == 1)
+									ws.achievementMessage = "Achievement Unlocked: You killed your First enemy!";
+								else {
+									if (ws.killed == 17) {
+										ws.achievementMessage = "Achievement Unlocked: You killed all the enemies!";
+									}
+									else {
+										ws.achievementMessage = "Achievement Unlocked: You killed " + to_string(ws.killed) + " enemies!";
+									}
+								}
+								ws.showAchievement = true;
+							}
 							playSound(ws, "died.wav");
 							return true;
 						}
@@ -1063,7 +1079,7 @@ void renderGraphics(WorldState& ws, const vector<SDL_FRect_P>& obstacles) {
 			ws.showAchievement = false;
 			ws.messageTimer = 250;
 		}
-		setText(ws, ws.achievementMessage, 20, 800, 500, 50, Black, false);
+		setText(ws, ws.achievementMessage, 20, 700, 450, 50, Black, false);
 		ws.messageTimer--;
 	}
 	if (ws.stage == 2) {
@@ -1105,7 +1121,7 @@ int main(int argc, char* args[])
 		renderGraphics(worldState, obstacles);
 	Uint64 end = SDL_GetPerformanceCounter();
 	float passedTime = (end / start) / ((float)SDL_GetPerformanceFrequency() * 1000.0f);
-	SDL_Delay(floor(16.666f - passedTime));
+	//SDL_Delay(floor(16.666f - passedTime));
 	}
 
 	SDL_DestroyTexture(worldState.texture);
